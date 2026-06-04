@@ -10,20 +10,7 @@ const BookingButton = ({ onClick }: BookingButtonProps) => {
   return (
     <button 
       onClick={onClick}
-      style={{ 
-        marginTop: '20px', 
-        padding: '15px', 
-        fontSize: '16px', 
-        backgroundColor: '#1D3557', 
-        color: 'white', 
-        border: 'none', 
-        borderRadius: '8px', 
-        cursor: 'pointer',
-        width: '100%',
-        fontWeight: 'bold',
-        textTransform: 'uppercase',
-        letterSpacing: '1px'
-      }}
+      className="w-full mt-5 py-3 px-6 bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white text-xs font-bold tracking-widest uppercase rounded-xl transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] select-none focus:outline-none"
     >
       {t('boton_reservar')}
     </button>

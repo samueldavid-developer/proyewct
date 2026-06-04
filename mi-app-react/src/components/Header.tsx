@@ -1,23 +1,54 @@
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import gsap from 'gsap';
 
-const Header = () => {
+interface HeaderProps {
+  theme: string;
+}
+
+const Header = ({ theme }: HeaderProps) => {
   const { t } = useTranslation();
+  const headerRef = useRef<HTMLElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const subtitleRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    const tl = gsap.timeline();
+    tl.fromTo(headerRef.current, 
+      { y: -30, opacity: 0 }, 
+      { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out' }
+    );
+    tl.fromTo(titleRef.current,
+      { scale: 0.95, opacity: 0 },
+      { scale: 1, opacity: 1, duration: 0.6, ease: 'back.out(1.2)' },
+      '-=0.5'
+    );
+    tl.fromTo(subtitleRef.current,
+      { y: 10, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out' },
+      '-=0.3'
+    );
+  }, []);
 
   return (
-    <header style={{ 
-      backgroundColor: '#ffffff', // Rojo elegante
-      color: 'white', 
-      padding: '5px 20px', 
-      textAlign: 'center',
-      boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-      borderBottomLeftRadius: '20px',
-      borderBottomRightRadius: '20px',
-      marginBottom: '40px'
-    }}>
-      <h1 style={{ margin: '0', fontSize: '3rem', fontWeight: '800', letterSpacing: '1px' }}>
-        Madrid Tuk-Tours
+    <header 
+      ref={headerRef}
+      className="text-center py-10 mb-8"
+    >
+      <h1 
+        ref={titleRef}
+        className={`font-extrabold text-5xl md:text-6xl tracking-tight select-none transition-colors duration-500 ${
+          theme === 'dark' ? 'text-white' : 'text-slate-900'
+        }`}
+      >
+        Nina Tuk Tours
       </h1>
-      <p style={{ margin: '20px auto 0', fontSize: '1.2rem', opacity: 0.9, maxWidth: '600px', color: '#333' }}>
+      <p 
+        ref={subtitleRef}
+        className={`mt-4 text-base md:text-lg font-medium max-w-xl mx-auto leading-relaxed transition-colors duration-500 ${
+          theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
+        }`}
+      >
         {t('eslogan')}
       </p>
     </header>

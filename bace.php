@@ -19,6 +19,9 @@ if ($conexion->connect_error) {
     die(json_encode(["error" => "Error de conexión a la BD: " . $conexion->connect_error]));
 }
 
+// Configurar charset a UTF-8
+$conexion->set_charset("utf8mb4");
+
 // 4. Buscar los datos en la tabla 'tours'
 $sql = "SELECT * FROM tours";
 $resultado = $conexion->query($sql);
@@ -28,6 +31,16 @@ $tours = array();
 // 5. Recorrer los resultados y guardarlos en un arreglo
 if ($resultado->num_rows > 0) {
     while($fila = $resultado->fetch_assoc()) {
+        $tour_id = $fila['id'];
+        $sql_img = "SELECT ruta_imagen FROM imagenes_tours WHERE tour_id = $tour_id";
+        $res_img = $conexion->query($sql_img);
+        $imagenes = array();
+        if ($res_img && $res_img->num_rows > 0) {
+            while($img_row = $res_img->fetch_assoc()) {
+                $imagenes[] = $img_row['ruta_imagen'];
+            }
+        }
+        $fila['imagenes'] = $imagenes;
         $tours[] = $fila;
     }
 }
