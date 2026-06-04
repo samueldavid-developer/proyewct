@@ -305,13 +305,23 @@ const resources = {
   }
 };
 
-// 2. Initialize i18next
+// 2. Auto-detect browser language helper
+const getBrowserLanguage = (): string => {
+  if (typeof navigator === 'undefined') return 'es';
+  const code = (navigator.language || 'es').split('-')[0].toLowerCase();
+  const supported = ['es', 'en', 'pl', 'it', 'pt', 'fr'];
+  return supported.includes(code) ? code : 'es';
+};
+
+const defaultLanguage = getBrowserLanguage();
+
+// 3. Initialize i18next
 i18n
   .use(initReactI18next) // Passes i18n down to react-i18next
   .init({
     resources,
-    lng: 'es', // Default language
-    fallbackLng: 'en', // Fallback language if a key is missing
+    lng: defaultLanguage,
+    fallbackLng: 'es', // Fallback to Spanish if key is missing
     interpolation: {
       escapeValue: false // React already escapes values to prevent XSS
     }

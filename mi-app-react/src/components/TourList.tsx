@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import BookingButton from './BookingButton';
 import { useTranslation } from 'react-i18next';
+import { translateText } from '../utils/translate';
 
 interface Tour {
   id: number;
@@ -33,18 +34,28 @@ interface TourCardProps {
 const TourCard = ({ tour, theme, index }: TourCardProps) => {
   const { i18n } = useTranslation();
   const [imgIndex, setImgIndex] = useState(0);
+  const [translatedName, setTranslatedName] = useState(tour.nombre_es);
 
   const currentLang = i18n.language ? i18n.language.split('-')[0] : 'es';
 
-  const getLocalizedName = () => {
-    if (currentLang === 'es') return tour.nombre_es;
-    if (currentLang === 'pl') return tour.nombre_pl;
-    if (currentLang === 'en') return tour.nombre_en;
-    if (currentLang === 'it') return tour.nombre_en || tour.nombre_es;
-    if (currentLang === 'pt') return tour.nombre_es || tour.nombre_en;
-    if (currentLang === 'fr') return tour.nombre_en || tour.nombre_es;
-    return tour.nombre_es;
-  };
+  useEffect(() => {
+    if (currentLang === 'es') {
+      setTranslatedName(tour.nombre_es);
+      return;
+    }
+    if (currentLang === 'en' && tour.nombre_en) {
+      setTranslatedName(tour.nombre_en);
+      return;
+    }
+    if (currentLang === 'pl' && tour.nombre_pl) {
+      setTranslatedName(tour.nombre_pl);
+      return;
+    }
+
+    translateText(tour.nombre_es, 'es', currentLang)
+      .then((resText) => setTranslatedName(resText))
+      .catch(() => setTranslatedName(tour.nombre_en || tour.nombre_es));
+  }, [currentLang, tour.nombre_es, tour.nombre_en, tour.nombre_pl]);
 
   const images = tour.imagenes && tour.imagenes.length > 0 ? tour.imagenes : [];
 
@@ -88,7 +99,7 @@ const TourCard = ({ tour, theme, index }: TourCardProps) => {
               <img 
                 key={imgIndex}
                 src={images[imgIndex]} 
-                alt={`${getLocalizedName()} slide ${imgIndex + 1}`}
+                alt={`${translatedName} slide ${imgIndex + 1}`}
                 className="w-full h-full object-cover select-none animate-fade-in"
               />
 
@@ -146,7 +157,7 @@ const TourCard = ({ tour, theme, index }: TourCardProps) => {
         <h3 className={`font-bold text-lg md:text-xl leading-snug transition-colors duration-300 ${
           theme === 'dark' ? 'text-slate-100 group-hover:text-rose-400' : 'text-slate-800 group-hover:text-rose-500'
         }`}>
-          {getLocalizedName()}
+          {translatedName}
         </h3>
         
         <div className="mt-4 flex items-baseline gap-1.5">
@@ -161,7 +172,7 @@ const TourCard = ({ tour, theme, index }: TourCardProps) => {
         </div>
       </div>
       
-      <BookingButton onClick={() => console.log(`Reservando ${getLocalizedName()}`)} />
+      <BookingButton onClick={() => { window.location.hash = `#/reserva?id=${tour.id}`; }} />
     </div>
   );
 };

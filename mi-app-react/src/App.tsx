@@ -8,6 +8,7 @@ import Testimonials from './components/Testimonials';
 import FAQ from './components/FAQ';
 import Footer from './components/Footer';
 import AdminPanel from './components/AdminPanel';
+import BookingPage from './components/BookingPage';
 
 function App() {
   const [theme, setTheme] = useState(() => {
@@ -23,9 +24,24 @@ function App() {
     return typeof window !== 'undefined' && window.location.hash === '#/admin';
   });
 
+  const getBookingTourIdFromHash = () => {
+    if (typeof window === 'undefined') return null;
+    const hash = window.location.hash;
+    if (hash.startsWith('#/reserva')) {
+      const match = hash.match(/id=(\d+)/);
+      if (match) {
+        return parseInt(match[1]);
+      }
+    }
+    return null;
+  };
+
+  const [bookingTourId, setBookingTourId] = useState<number | null>(() => getBookingTourIdFromHash());
+
   useEffect(() => {
     const handleHashChange = () => {
       setIsAdminView(window.location.hash === '#/admin');
+      setBookingTourId(getBookingTourIdFromHash());
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
@@ -79,6 +95,8 @@ function App() {
       <div className="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         {isAdminView ? (
           <AdminPanel theme={theme} onClose={() => { window.location.hash = ''; }} />
+        ) : bookingTourId !== null ? (
+          <BookingPage theme={theme} tourId={bookingTourId} onClose={() => { window.location.hash = ''; }} />
         ) : (
           <>
             <Header theme={theme} />

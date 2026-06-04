@@ -343,6 +343,64 @@ switch ($action) {
         }
         break;
 
+    case 'create_booking':
+        $conexion->begin_transaction();
+        try {
+            $nombre = $conexion->real_escape_string($input['nombre']);
+            $email = $conexion->real_escape_string($input['email']);
+            $telefono = isset($input['telefono']) ? $conexion->real_escape_string($input['telefono']) : '';
+            $idioma = isset($input['idioma_preferido']) ? $conexion->real_escape_string($input['idioma_preferido']) : 'es';
+            
+            $tour_id = intval($input['tour_id']);
+            $fecha_tour = $conexion->real_escape_string($input['fecha_tour']);
+            $hora_tour = $conexion->real_escape_string($input['hora_tour']);
+            $cantidad_personas = intval($input['cantidad_personas']);
+            $total_pagar = floatval($input['total_pagar']);
+            
+            $pasarela = $conexion->real_escape_string($input['pasarela']);
+            $transaccion_id = $conexion->real_escape_string($input['transaccion_id']);
+            $estado_pago = $conexion->real_escape_string($input['estado_pago']);
+
+            // 1. Verificar si el usuario ya existe por email
+            $sql_user = "SELECT id FROM usuarios WHERE email='$email'";
+            $res_user = $conexion->query($sql_user);
+            if ($res_user && $res_user->num_rows > 0) {
+                $user_row = $res_user->fetch_assoc();
+                $usuario_id = $user_row['id'];
+                // Actualizar datos
+                $conexion->query("UPDATE usuarios SET nombre='$nombre', telefono='$telefono' WHERE id=$usuario_id");
+            } else {
+                // Crear nuevo cliente
+                $temp_pass = password_hash(uniqid(), PASSWORD_DEFAULT);
+                $sql_ins_user = "INSERT INTO usuarios (nombre, email, telefono, idioma_preferido, contrasena) VALUES ('$nombre', '$email', '$telefono', '$idioma', '$temp_pass')";
+                if (!$conexion->query($sql_ins_user)) {
+                    throw new Exception("Error al guardar cliente: " . $conexion->error);
+                }
+                $usuario_id = $conexion->insert_id;
+            }
+
+            // 2. Crear reserva
+            $sql_reserva = "INSERT INTO reservas (usuario_id, tour_id, fecha_tour, hora_tour, cantidad_personas, total_pagar, estado_reserva) VALUES ($usuario_id, $tour_id, '$fecha_tour', '$hora_tour', $cantidad_personas, $total_pagar, 'confirmada')";
+            if (!$conexion->query($sql_reserva)) {
+                throw new Exception("Error al registrar reserva: " . $conexion->error);
+            }
+            $reserva_id = $conexion->insert_id;
+
+            // 3. Crear pago
+            $sql_pago = "INSERT INTO pagos (reserva_id, pasarela, transaccion_id, monto, moneda, estado_pago) VALUES ($reserva_id, '$pasarela', '$transaccion_id', $total_pagar, 'EUR', '$estado_pago')";
+            if (!$conexion->query($sql_pago)) {
+                throw new Exception("Error al registrar pago: " . $conexion->error);
+            }
+
+            $conexion->commit();
+            echo json_encode(["success" => true, "reserva_id" => $reserva_id]);
+        } catch (Exception $e) {
+            $conexion->rollback();
+            http_response_code(400);
+            echo json_encode(["success" => false, "error" => $e->getMessage()]);
+        }
+        break;
+
     default:
         http_response_code(400);
         echo json_encode(["error" => "Acción no válida o no especificada."]);
