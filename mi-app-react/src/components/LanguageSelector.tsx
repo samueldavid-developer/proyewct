@@ -46,25 +46,25 @@ const LanguageSelector = ({ theme }: LanguageSelectorProps) => {
         theme === 'dark' ? 'text-slate-500' : 'text-slate-400'
       }`}>
         {t('seleccionar_idioma')}:
-      </span>
-      <button onClick={() => cambiarIdioma('es')} className={getBtnClass('es')}>
-        <span>ES</span>
-      </button>
-      <button onClick={() => cambiarIdioma('en')} className={getBtnClass('en')}>
-        <span>EN</span>
-      </button>
-      <button onClick={() => cambiarIdioma('pl')} className={getBtnClass('pl')}>
-        <span>PL</span>
-      </button>
-      <button onClick={() => cambiarIdioma('it')} className={getBtnClass('it')}>
-        <span>IT</span>
-      </button>
-      <button onClick={() => cambiarIdioma('pt')} className={getBtnClass('pt')}>
-        <span>PT</span>
-      </button>
-      <button onClick={() => cambiarIdioma('fr')} className={getBtnClass('fr')}>
-        <span>FR</span>
-      </button>
+</span>
+<button onClick={() => cambiarIdioma('es')} className={getBtnClass('es')}>
+  <span>🇪🇸 ES</span>
+</button>
+<button onClick={() => cambiarIdioma('en')} className={getBtnClass('en')}>
+  <span>🇬🇧 EN</span>
+</button>
+<button onClick={() => cambiarIdioma('pl')} className={getBtnClass('pl')}>
+  <span>🇵🇱 PL</span>
+</button>
+<button onClick={() => cambiarIdioma('it')} className={getBtnClass('it')}>
+  <span>🇮🇹 IT</span>
+</button>
+<button onClick={() => cambiarIdioma('pt')} className={getBtnClass('pt')}>
+  <span>🇵🇹 PT</span>
+</button>
+<button onClick={() => cambiarIdioma('fr')} className={getBtnClass('fr')}>
+  <span>🇫🇷 FR</span>
+</button>
     </div>
   );
 };

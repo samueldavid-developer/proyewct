@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import gsap from 'gsap';
-
+import logo from '../assets/logo.jpeg';
 interface HeaderProps {
   theme: string;
 }
@@ -35,7 +35,14 @@ const Header = ({ theme }: HeaderProps) => {
       ref={headerRef}
       className="text-center py-10 mb-8"
     >
-      <h1 
+      <img 
+        src={logo} 
+        alt="Nina Tuk Tours Logo" 
+        className="mx-auto mb-6 w-50 h-40 rounded-full object-cover shadow-lg " 
+      />
+    
+        
+        <h1 
         ref={titleRef}
         className={`font-extrabold text-5xl md:text-6xl tracking-tight select-none transition-colors duration-500 ${
           theme === 'dark' ? 'text-white' : 'text-slate-900'
