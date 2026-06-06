@@ -43,14 +43,35 @@ const resources = {
       faq_q3: "¿Qué sucede si llueve durante el tour?",
       faq_a3: "Nuestros Tuk Tours están equipados con capotas transparentes para lluvia y viento que te mantendrán completamente seco sin perder nada de visibilidad.",
       faq_q4: "¿Es apto para niños y personas mayores?",
-      faq_a4: "Sí, es una actividad ideal y segura para todas las edades. Evita las largas caminatas y el cansancio, permitiendo a todos disfrutar por igual.",
+      faq_a4: "Sí, es una actividad ideal y muy segura, aunque por normativas de seguridad a bordo solo se permiten niños de 4 años en adelante. Es una excelente opción para evitar largas caminatas y disfrutar cómodamente.",
 
       // Footer
       footer_contacto: "Contacto",
-      footer_email: "info@ninatuktours.com",
-      footer_tlf: "+34 600 000 000",
+      footer_email: "nina.tuks.es@gmail.com",
+      footer_tlf: "+34 641 807 779",
       footer_direccion: "Calle Mayor 1, Madrid, España",
-      footer_derechos: "Todos los derechos reservados. Nina Tuk Tours."
+      footer_derechos: "Todos los derechos reservados. Nina Tuk Tours.",
+      // BookingPage
+      booking: {
+        title: "Reserva de Tour",
+        heading: "Confirmar y Reservar",
+        loading_details: "Cargando detalles del tour...",
+        back_to_tours: "Volver a Tours",
+        error_no_tour: "Error: El tour seleccionado no existe en el sistema.",
+        success_title: "¡Pago y Reserva Confirmados!",
+        success_message: "Gracias, {{name}}. Hemos registrado con éxito tu pago de €{{price}} para el {{tour}}.",
+        code_label: "Código de Reserva",
+        fecha_label: "Fecha del Tour",
+        hora_label: "Hora de Salida",
+        pasajeros_count_label: "Cantidad de Pasajeros",
+        gateway_label: "Pasarela de Pago",
+        regresar_inicio: "Regresar al Inicio",
+        personal_data_title: "1. Tus Datos Personales",
+        fecha_hora_title: "2. Fecha y Hora de Salida",
+        payment_title: "3. Pasarela de Pago",
+        confirm_button: "Confirmar Reserva y Pagar €{{price}}",
+        processing_payment: "Procesando Pago Seguro..."
+      }
     }
   },
   en: {
@@ -93,14 +114,35 @@ const resources = {
       faq_q3: "What happens if it rains during the tour?",
       faq_a3: "Our Tuk Tours are equipped with clear rain covers and wind shields that will keep you dry while maintaining 100% visibility.",
       faq_q4: "Is it suitable for children and seniors?",
-      faq_a4: "Yes, it is an ideal and safe activity for all ages. It avoids long walks and physical strain, allowing everyone to enjoy equally.",
+      faq_a4: "Yes, it is an ideal and safe activity, although due to onboard safety regulations only children aged 4 and older are allowed. It is an excellent option to avoid long walks and enjoy comfortably.",
 
       // Footer
       footer_contacto: "Contact",
-      footer_email: "info@ninatuktours.com",
-      footer_tlf: "+34 600 000 000",
+      footer_email: "nina.tuks.es@gmail.com",
+      footer_tlf: "+34 641 807 779",
       footer_direccion: "Calle Mayor 1, Madrid, Spain",
-      footer_derechos: "All rights reserved. Nina Tuk Tours."
+      footer_derechos: "All rights reserved. Nina Tuk Tours.",
+      // BookingPage
+      booking: {
+        title: "Tour Booking",
+        heading: "Confirm and Book",
+        loading_details: "Loading tour details...",
+        back_to_tours: "Back to Tours",
+        error_no_tour: "Error: The selected tour does not exist.",
+        success_title: "Payment and Booking Confirmed!",
+        success_message: "Thanks, {{name}}. We have recorded your payment of €{{price}} for {{tour}}.",
+        code_label: "Booking Code",
+        fecha_label: "Tour Date",
+        hora_label: "Departure Time",
+        pasajeros_count_label: "Number of Passengers",
+        gateway_label: "Payment Gateway",
+        regresar_inicio: "Return Home",
+        personal_data_title: "1. Your Personal Details",
+        fecha_hora_title: "2. Date and Departure Time",
+        payment_title: "3. Payment Gateway",
+        confirm_button: "Confirm Booking and Pay €{{price}}",
+        processing_payment: "Processing Secure Payment..."
+      }
     }
   },
   pl: {
@@ -143,12 +185,12 @@ const resources = {
       faq_q3: "Co się stanie, jeśli podczas wycieczki zacznie padać deszcz?",
       faq_a3: "Nasze pojazdy Tuk Tour są wyposażone w przezroczyste osłony przeciwdeszczowe i wiatroszczelne, które zapewnią suchość przy zachowaniu pełnej widoczności.",
       faq_q4: "Czy wycieczka jest odpowiednia dla dzieci i seniorów?",
-      faq_a4: "Tak, to idealna i bezpieczna aktywność dla osób w każdym wieku. Pozwala uniknąć długich spacerów i zmęczenia fizycznego, gwarantując radość wszystkim.",
+      faq_a4: "Tak, to idealna i bezpieczna aktywność, chociaż ze względów bezpieczeństwa na pokładzie dozwolony jest udział wyłącznie dzieci od 4 roku życia. To doskonała opcja, aby uniknąć długich spacerów i cieszyć się komfortem.",
 
       // Footer
       footer_contacto: "Kontakt",
-      footer_email: "info@ninatuktours.com",
-      footer_tlf: "+34 600 000 000",
+      footer_email: "nina.tuks.es@gmail.com",
+      footer_tlf: "+34 641 807 779",
       footer_direccion: "Calle Mayor 1, Madryt, Hiszpania",
       footer_derechos: "Wszelkie prawa zastrzeżone. Nina Tuk Tours."
     }
@@ -193,12 +235,12 @@ const resources = {
       faq_q3: "Cosa succede se piove durante il tour?",
       faq_a3: "I nostri Tuk Tour sono dotati di coperture trasparenti per pioggia e vento che ti terranno asciutto mantenendo una visibilità al 100%.",
       faq_q4: "È adatto a bambini e anziani?",
-      faq_a4: "Sì, è un'attività ideale e sicura per tutte le età. Evita lunghe camminate e sforzi fisici, permettendo a tutti di godersi il tour.",
+      faq_a4: "Sì, è un'attività ideale e sicura, anche se per norme di sicurezza a bordo sono ammessi solo bambini dai 4 anni in su. È un'ottima opzione per evitare lunghe camminate e godersi il tour in comodità.",
 
       // Footer
       footer_contacto: "Contatti",
-      footer_email: "info@ninatuktours.com",
-      footer_tlf: "+34 600 000 000",
+      footer_email: "nina.tuks.es@gmail.com",
+      footer_tlf: "+34 641 807 779",
       footer_direccion: "Calle Mayor 1, Madrid, Spagna",
       footer_derechos: "Tutti i diritti riservati. Nina Tuk Tours."
     }
@@ -243,12 +285,12 @@ const resources = {
       faq_q3: "O que acontece se chover durante o tour?",
       faq_a3: "Os nossos Tuk Tours estão equipados com coberturas transparentes contra chuva e vento que o manterão seco sem perder a visibilidade.",
       faq_q4: "É adequado para crianças e idosos?",
-      faq_a4: "Sim, é uma atividade ideal e segura para todas as idades. Evita longas caminhadas e cansaço, permitindo que todos se divirtam igualmente.",
+      faq_a4: "Sim, é uma atividade ideal e segura, embora por regulamentos de segurança a bordo apenas sejam permitidas crianças a partir dos 4 anos. É uma excelente opção para evitar longas caminhadas e desfrutar com conforto.",
 
       // Footer
       footer_contacto: "Contacto",
-      footer_email: "info@ninatuktours.com",
-      footer_tlf: "+34 600 000 000",
+      footer_email: "nina.tuks.es@gmail.com",
+      footer_tlf: "+34 641 807 779",
       footer_direccion: "Calle Mayor 1, Madrid, Espanha",
       footer_derechos: "Todos os direitos reservados. Nina Tuk Tours."
     }
@@ -281,7 +323,7 @@ const resources = {
       test_2_coment: "Le Tuk Tour est très confortable et très silencieux. Je recommande vivement le tour au coucher du soleil, les lumières de la ville sont magnifiques.",
       test_3_autor: "Katarzyna Kowalska",
       test_3_pais: "Pologne",
-      test_3_coment: "Excellent service en plusieurs langues. La réservation a été très simple et nous avons pu faire des arrêts pour de superbes photos. 10 sur 10 !",
+      test_3_coment: "Excellent service en several langues. La réservation a été très simple et nous avons pu faire des arrêts pour de superbes photos. 10 sur 10 !",
 
       // FAQ
       faq_titulo: "Questions Fréquentes",
@@ -293,12 +335,12 @@ const resources = {
       faq_q3: "Que se passe-t-il s'il pleut pendant la visite ?",
       faq_a3: "Nos Tuk Tours sont équipés de protections transparentes contre le vent et la pluie, vous gardant au sec tout en conservant une visibilité totale.",
       faq_q4: "Est-ce adapté aux enfants et aux personnes âgées ?",
-      faq_a4: "Oui, c'est une activité idéale et sûre pour tous les âges. Elle évite les longues marches et la fatigue, permettant à chacun de profiter pleinement.",
+      faq_a4: "Oui, c'est une activité idéale et sûre, bien que pour des raisons de sécurité à bord, seuls les enfants de 4 ans et plus soient autorisés. C'est une excellente option pour éviter les longues marches et profiter confortablement.",
 
       // Footer
       footer_contacto: "Contact",
-      footer_email: "info@ninatuktours.com",
-      footer_tlf: "+34 600 000 000",
+      footer_email: "nina.tuks.es@gmail.com",
+      footer_tlf: "+34 641 807 779",
       footer_direccion: "Calle Mayor 1, Madrid, Espagne",
       footer_derechos: "Tous droits réservés. Nina Tuk Tours."
     }

@@ -22,7 +22,7 @@ interface BookingPageProps {
 const API_URL = 'http://localhost/proyewct/admin_api.php';
 
 export default function BookingPage({ theme, tourId, onClose }: BookingPageProps) {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const [tour, setTour] = useState<Tour | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookingSuccess, setBookingSuccess] = useState(false);
@@ -170,7 +170,7 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
       <div className="text-center py-24">
         <div className="inline-block w-10 h-10 border-4 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
         <p className={`text-xs font-bold uppercase tracking-widest mt-4 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
-          Cargando detalles del tour...
+          {t('booking.loading_details')}
         </p>
       </div>
     );
@@ -179,9 +179,9 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
   if (!tour) {
     return (
       <div className="text-center py-24">
-        <p className="text-rose-500 font-bold">Error: El tour seleccionado no existe en el sistema.</p>
+        <p className="text-rose-500 font-bold">{t('booking.error_no_tour')}</p>
         <button onClick={onClose} className="mt-4 px-6 py-2.5 bg-rose-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider">
-          Volver a Tours
+          {t('booking.back_to_tours')}
         </button>
       </div>
     );
@@ -192,9 +192,9 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
       {/* Back button header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-5 mb-8 border-slate-200/50 dark:border-slate-800/50">
         <div>
-          <span className="text-xs font-bold uppercase tracking-widest text-rose-500">Reserva de Tour</span>
+          <span className="text-xs font-bold uppercase tracking-widest text-rose-500">{t('booking.title')}</span>
           <h1 className={`text-2xl sm:text-3xl font-black transition-colors ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-            Confirmar y Reservar
+            {t('booking.heading')}
           </h1>
         </div>
         <button
@@ -208,7 +208,7 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
-          Volver a Tours
+          {t('booking.back_to_tours')}
         </button>
       </div>
 
@@ -223,27 +223,27 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
             </svg>
           </div>
           <h2 className={`text-3xl font-black mb-3 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-            ¡Pago y Reserva Confirmados!
+            {t('booking.success_title')}
           </h2>
           <p className={`text-sm leading-relaxed mb-6 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-            Gracias, <strong>{nombre}</strong>. Hemos registrado con éxito tu pago de <strong>€{tour.precio}</strong> para el <strong>{translatedName}</strong>.
+            {t('booking.success_message', { name: nombre, price: tour.precio, tour: translatedName })}
           </p>
 
           <div className={`p-4 rounded-2xl mb-8 font-mono text-left space-y-2 border text-xs ${
             theme === 'dark' ? 'bg-slate-950/50 border-slate-800 text-slate-300' : 'bg-slate-50 border-slate-150 text-slate-650'
           }`}>
-            <p><strong>Código de Reserva:</strong> NTT-{successReservaId}</p>
-            <p><strong>Fecha del Tour:</strong> {fecha}</p>
-            <p><strong>Hora de Salida:</strong> {hora} hrs</p>
-            <p><strong>Cantidad de Pasajeros:</strong> {personas} {personas === 1 ? 'persona' : 'personas'}</p>
-            <p><strong>Pasarela de Pago:</strong> {gateway.toUpperCase()} (Completado)</p>
+            <p><strong>{t('booking.code_label')}: </strong> NTT-{successReservaId}</p>
+            <p><strong>{t('booking.fecha_label')}: </strong> {fecha}</p>
+            <p><strong>{t('booking.hora_label')}: </strong> {hora} hrs</p>
+            <p><strong>{t('booking.pasajeros_count_label')}: </strong> {personas} {personas === 1 ? 'persona' : 'personas'}</p>
+            <p><strong>{t('booking.gateway_label')}: </strong> {gateway.toUpperCase()} (Completado)</p>
           </div>
 
           <button
             onClick={onClose}
             className="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs uppercase tracking-wider py-3.5 rounded-xl transition-colors shadow-sm"
           >
-            Regresar al Inicio
+            {t('booking.regresar_inicio')}
           </button>
         </div>
       ) : (
@@ -310,7 +310,7 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
                 <h3 className={`text-base font-extrabold pb-2 border-b border-slate-200/30 dark:border-slate-800/30 ${
                   theme === 'dark' ? 'text-slate-100' : 'text-slate-800'
                 }`}>
-                  1. Tus Datos Personales
+                  {t('booking.personal_data_title')}
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -349,7 +349,7 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
                       required
                       value={telefono}
                       onChange={(e) => setTelefono(e.target.value)}
-                      placeholder="+34 600 000 000"
+                      placeholder="+34 641 807 779"
                       className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${
                         theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-white' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
                       }`}
@@ -382,23 +382,62 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
                 <h3 className={`text-base font-extrabold pb-2 border-b border-slate-200/30 dark:border-slate-800/30 ${
                   theme === 'dark' ? 'text-slate-100' : 'text-slate-800'
                 }`}>
-                  2. Fecha y Hora de Salida
+                  {t('booking.fecha_hora_title')}
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Fecha del Viaje</label>
-                    <input
-                      type="date"
-                      required
-                      min={new Date().toISOString().split('T')[0]}
-                      value={fecha}
-                      onChange={(e) => setFecha(e.target.value)}
-                      className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${
-                        theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-slate-250' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
-                      }`}
-                    />
-                  </div>
+  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+    Fecha del Viaje
+  </label>
+  
+  <div className="flex gap-2">
+    {/* Selector de Día */}
+    <select
+      required
+      value={fecha.split('-')[2] || ''}
+      onChange={(e) => {
+        const dia = e.target.value;
+        const mes = fecha.split('-')[1] || '01';
+        const anyo = new Date().getFullYear(); // Año actual automático
+        setFecha(`${anyo}-${mes}-${dia}`);
+      }}
+      className={`w-1/2 px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${
+        theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
+      }`}
+    >
+      <option value="" disabled>Día</option>
+      {Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0')).map((d) => (
+        <option key={d} value={d}>{d}</option>
+      ))}
+    </select>
+
+    {/* Selector de Mes */}
+    <select
+      required
+      value={fecha.split('-')[1] || ''}
+      onChange={(e) => {
+        const mes = e.target.value;
+        const dia = fecha.split('-')[2] || '01';
+        const anyo = new Date().getFullYear(); // Año actual automático
+        setFecha(`${anyo}-${mes}-${dia}`);
+      }}
+      className={`w-1/2 px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${
+        theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
+      }`}
+    >
+      <option value="" disabled>Mes</option>
+      {[
+        { v: '01', n: 'Enero' }, { v: '02', n: 'Febrero' }, { v: '03', n: 'Marzo' },
+        { v: '04', n: 'Abril' }, { v: '05', n: 'Mayo' }, { v: '06', n: 'Junio' },
+        { v: '07', n: 'Julio' }, { v: '08', n: 'Agosto' }, { v: '09', n: 'Septiembre' },
+        { v: '10', n: 'Octubre' }, { v: '11', n: 'Noviembre' }, { v: '12', n: 'Diciembre' }
+      ].map((m) => (
+        <option key={m.v} value={m.v}>{m.n}</option>
+      ))}
+    </select>
+  </div>
+</div>
 
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Hora de Salida</label>
@@ -466,7 +505,7 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
                 <h3 className={`text-base font-extrabold pb-2 border-b border-slate-200/30 dark:border-slate-800/30 ${
                   theme === 'dark' ? 'text-slate-100' : 'text-slate-800'
                 }`}>
-                  3. Pasarela de Pago
+                  {t('booking.payment_title')}
                 </h3>
 
                 {/* Gateway Tab selector */}
@@ -625,10 +664,10 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
                   {paying ? (
                     <div className="flex items-center justify-center gap-2">
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Procesando Pago Seguro...</span>
+                      <span>{t('booking.processing_payment')}</span>
                     </div>
                   ) : (
-                    `Confirmar Reserva y Pagar €${tour.precio}`
+                    t('booking.confirm_button', { price: tour.precio })
                   )}
                 </button>
               </div>
