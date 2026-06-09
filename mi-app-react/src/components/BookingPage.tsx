@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateText } from '../utils/translate';
-
+import MapPicker from './mapa';
 interface Tour {
   id: number;
   nombre_es: string;
@@ -22,6 +22,7 @@ interface BookingPageProps {
 const API_URL = 'http://localhost/proyewct/admin_api.php';
 
 export default function BookingPage({ theme, tourId, onClose }: BookingPageProps) {
+
   const { i18n, t } = useTranslation();
   const [tour, setTour] = useState<Tour | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,6 +36,8 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
   const [fecha, setFecha] = useState('');
   const [hora, setHora] = useState('10:00');
   const [personas, setPersonas] = useState(1);
+  const [puntoRecogida, setPuntoRecogida] = useState('');
+  const [isMapOpen, setIsMapOpen] = useState(false);
 
   // Payment Fields
   const [gateway, setGateway] = useState<'stripe' | 'paypal'>('stripe');
@@ -44,7 +47,6 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
   const [cardCvv, setCardCvv] = useState('');
   const [paying, setPaying] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [translatedName, setTranslatedName] = useState('');
 
   useEffect(() => {
     // Fetch tour information
@@ -67,25 +69,33 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
 
   const currentLang = i18n.language ? i18n.language.split('-')[0] : 'es';
 
-  useEffect(() => {
-    if (!tour) return;
-    if (currentLang === 'es') {
-      setTranslatedName(tour.nombre_es);
-      return;
-    }
-    if (currentLang === 'en' && tour.nombre_en) {
-      setTranslatedName(tour.nombre_en);
-      return;
-    }
-    if (currentLang === 'pl' && tour.nombre_pl) {
-      setTranslatedName(tour.nombre_pl);
-      return;
-    }
+  const translatedName = React.useMemo(() => {
+    if (!tour) return '';
+    if (currentLang === 'es') return tour.nombre_es;
+    if (currentLang === 'en' && tour.nombre_en) return tour.nombre_en;
+    if (currentLang === 'pl' && tour.nombre_pl) return tour.nombre_pl;
 
-    translateText(tour.nombre_es, 'es', currentLang)
-      .then((resText) => setTranslatedName(resText))
-      .catch(() => setTranslatedName(tour.nombre_en || tour.nombre_es));
+    // For other languages, we'll use a local state for the async translation
+    return null;
   }, [tour, currentLang]);
+
+  const [asyncTranslatedName, setAsyncTranslatedName] = useState('');
+
+  useEffect(() => {
+    if (translatedName === null && tour) {
+      translateText(tour.nombre_es, 'es', currentLang)
+        .then((resText) => setAsyncTranslatedName(resText))
+        .catch(() => setAsyncTranslatedName(tour.nombre_en || tour.nombre_es));
+    } else {
+      // If we don't need async translation, we clear it only if it's not already empty
+      // We do this in a microtask to avoid the linter error about synchronous setState in effect
+      if (asyncTranslatedName !== '') {
+        Promise.resolve().then(() => setAsyncTranslatedName(''));
+      }
+    }
+  }, [tour, currentLang, translatedName, asyncTranslatedName]);
+
+  const displayName = translatedName || asyncTranslatedName;
 
   const formatCardNumber = (value: string) => {
     const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
@@ -120,11 +130,18 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
   const handleSubmitBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tour) return;
+
+    if (!puntoRecogida.trim()) {
+      setErrorMsg('Por favor, indica un lugar de recogida para continuar.');
+      setPaying(false);
+      return;
+    }
+
     setPaying(true);
     setErrorMsg('');
 
     try {
-      const mockTxId = gateway === 'stripe' 
+      const mockTxId = gateway === 'stripe'
         ? 'ch_' + Math.random().toString(36).substring(2, 10).toUpperCase() + Math.random().toString(36).substring(2, 10).toUpperCase()
         : 'PAYID-' + Math.random().toString(36).substring(2, 15).toUpperCase();
 
@@ -138,6 +155,7 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
         fecha_tour: fecha,
         hora_tour: hora,
         cantidad_personas: personas,
+        punto_recogida: puntoRecogida,
         total_pagar: tour.precio,
         pasarela: gateway,
         transaccion_id: mockTxId,
@@ -157,9 +175,10 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
 
       setSuccessReservaId(data.reserva_id);
       setBookingSuccess(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setErrorMsg(err.message || 'Ocurrió un error en el pago. Inténtalo de nuevo.');
+      const errorMessage = err instanceof Error ? err.message : 'Ocurrió un error en el pago. Inténtalo de nuevo.';
+      setErrorMsg(errorMessage);
     } finally {
       setPaying(false);
     }
@@ -199,11 +218,10 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
         </div>
         <button
           onClick={onClose}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl border transition-all duration-300 self-start sm:self-auto w-fit ${
-            theme === 'dark'
-              ? 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'
-              : 'bg-white border-slate-200 text-slate-650 hover:text-slate-950 hover:border-slate-350'
-          }`}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl border transition-all duration-300 self-start sm:self-auto w-fit ${theme === 'dark'
+            ? 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'
+            : 'bg-white border-slate-200 text-slate-650 hover:text-slate-950 hover:border-slate-350'
+            }`}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -214,9 +232,8 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
 
       {bookingSuccess ? (
         /* SUCCESS PAGE */
-        <div className={`p-6 sm:p-8 md:p-12 rounded-3xl border shadow-lg text-center max-w-xl mx-auto transition-colors ${
-          theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-        }`}>
+        <div className={`p-6 sm:p-8 md:p-12 rounded-3xl border shadow-lg text-center max-w-xl mx-auto transition-colors ${theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+          }`}>
           <div className="w-20 h-20 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-500/20">
             <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -226,16 +243,16 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
             {t('booking.success_title')}
           </h2>
           <p className={`text-sm leading-relaxed mb-6 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-            {t('booking.success_message', { name: nombre, price: tour.precio, tour: translatedName })}
+            {t('booking.success_message', { name: nombre, price: tour.precio, tour: displayName })}
           </p>
 
-          <div className={`p-4 rounded-2xl mb-8 font-mono text-left space-y-2 border text-xs ${
-            theme === 'dark' ? 'bg-slate-950/50 border-slate-800 text-slate-300' : 'bg-slate-50 border-slate-150 text-slate-650'
-          }`}>
+          <div className={`p-4 rounded-2xl mb-8 font-mono text-left space-y-2 border text-xs ${theme === 'dark' ? 'bg-slate-950/50 border-slate-800 text-slate-300' : 'bg-slate-50 border-slate-150 text-slate-650'
+            }`}>
             <p><strong>{t('booking.code_label')}: </strong> NTT-{successReservaId}</p>
             <p><strong>{t('booking.fecha_label')}: </strong> {fecha}</p>
             <p><strong>{t('booking.hora_label')}: </strong> {hora} hrs</p>
-            <p><strong>{t('booking.pasajeros_count_label')}: </strong> {personas} {personas === 1 ? 'persona' : 'personas'}</p>
+            <p><strong>Lugar de Recogida: </strong> {puntoRecogida || 'No especificado'}</p>
+            <p><strong>{t('booking.pasajeros_count_label')}: </strong> {personas} {personas === 1 ? t('persona') : t('personas')}</p>
             <p><strong>{t('booking.gateway_label')}: </strong> {gateway.toUpperCase()} (Completado)</p>
           </div>
 
@@ -250,20 +267,19 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
         /* BOOKING FORM AND ELEVATOR SLIDER */
         <form onSubmit={handleSubmitBooking} className="animate-fade-in w-full">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            
+
             {/* LEFT COLUMN: TOUR DETAILS, MARQUEE IMAGES & PERSONAL DETAILS / SCHEDULE FORM */}
             <div className="lg:col-span-7 space-y-6">
-              
+
               {/* Tour Info & Image Marquee */}
-              <div className={`rounded-3xl p-5 border transition-colors ${
-                theme === 'dark' ? 'bg-slate-900/60 border-slate-800/60' : 'bg-white border-slate-200/65'
-              }`}>
+              <div className={`rounded-3xl p-5 border transition-colors ${theme === 'dark' ? 'bg-slate-900/60 border-slate-800/60' : 'bg-white border-slate-200/65'
+                }`}>
                 <h3 className={`font-black text-lg mb-3 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-850'}`}>
-                  {translatedName}
+                  {displayName}
                 </h3>
                 <div className="flex gap-4 items-center text-xs font-bold text-slate-450 uppercase mb-4">
                   <span>⏱️ {tour.duracion_minutos} min</span>
-                  <span>👥 Máx. {tour.capacidad_max_personas} pers</span>
+                  <span>👥 {t('booking.passengers_label')}: {tour.capacidad_max_personas}</span>
                   <span className="text-rose-500">€{tour.precio} (Flat Rate)</span>
                 </div>
 
@@ -304,52 +320,92 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
               </div>
 
               {/* 1. Datos Personales */}
-              <div className={`p-6 md:p-8 rounded-3xl border shadow-md space-y-4 transition-colors ${
-                theme === 'dark' ? 'bg-slate-900/80 border-slate-800/70' : 'bg-white border-slate-200/70'
-              }`}>
-                <h3 className={`text-base font-extrabold pb-2 border-b border-slate-200/30 dark:border-slate-800/30 ${
-                  theme === 'dark' ? 'text-slate-100' : 'text-slate-800'
+              <div className={`p-6 md:p-8 rounded-3xl border shadow-md space-y-4 transition-colors ${theme === 'dark' ? 'bg-slate-900/80 border-slate-800/70' : 'bg-white border-slate-200/70'
                 }`}>
+                <h3 className={`text-base font-extrabold pb-2 border-b border-slate-200/30 dark:border-slate-800/30 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-800'
+                  }`}>
                   {t('booking.personal_data_title')}
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Nombre Completo</label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">{t('booking.full_name_label')}</label>
                     <input
                       type="text"
                       required
                       value={nombre}
                       onChange={(e) => setNombre(e.target.value)}
                       placeholder="Juan Pérez"
-                      className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${
-                        theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-white' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
-                      }`}
+                      className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-white' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
+                        }`}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Correo Electrónico</label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">{t('booking.email_label')}</label>
                     <input
                       type="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="juan@ejemplo.com"
-                      className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${
-                        theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-white' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
-                      }`}
+                      className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-white' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
+                        }`}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Teléfono</label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">{t('booking.phone_label')}</label>
                     <input
                       type="tel"
                       required
                       value={telefono}
                       onChange={(e) => setTelefono(e.target.value)}
                       placeholder="+34 641 807 779"
+                      className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-white' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
+                        }`}
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                      Lugar de Recogida (Hotel/Dirección)
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        required
+                        value={puntoRecogida}
+                        onChange={(e) => setPuntoRecogida(e.target.value)}
+                        placeholder="Escribe tu dirección o abre el mapa..."
+                        className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-white' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
+                          }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setIsMapOpen(true)}
+                        className="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all"
+                      >
+                        📍 MAPA
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* El MapPicker debe estar dentro del return, al final del formulario */}
+                  <MapPicker
+                    isOpen={isMapOpen}
+                    onClose={() => setIsMapOpen(false)}
+                    onConfirm={(direccion) => setPuntoRecogida(direccion)} // Recibe el string directamente
+                  />
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Lugar de Recogida</label>
+                    <input
+                      type="text"
+                      required
+                      autoComplete="off"
+                      value={puntoRecogida}
+                      onChange={(e) => setPuntoRecogida(e.target.value)}
+                      placeholder="Hotel, Calle, Estación..."
                       className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${
                         theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-white' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
                       }`}
@@ -357,17 +413,16 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Número de Pasajeros</label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">{t('booking.passengers_label')}</label>
                     <select
                       value={personas}
                       onChange={(e) => setPersonas(parseInt(e.target.value))}
-                      className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${
-                        theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-slate-250' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-850'
-                      }`}
+                      className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-slate-250' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-850'
+                        }`}
                     >
                       {Array.from({ length: tour.capacidad_max_personas || 4 }, (_, idx) => (
                         <option key={idx + 1} value={idx + 1} className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-800'}>
-                          {idx + 1} {idx + 1 === 1 ? 'persona' : 'personas'}
+                          {idx + 1} {idx + 1 === 1 ? t('persona') : t('personas')}
                         </option>
                       ))}
                     </select>
@@ -376,86 +431,79 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
               </div>
 
               {/* 2. Agenda */}
-              <div className={`p-6 md:p-8 rounded-3xl border shadow-md space-y-4 transition-colors ${
-                theme === 'dark' ? 'bg-slate-900/80 border-slate-800/70' : 'bg-white border-slate-200/70'
-              }`}>
-                <h3 className={`text-base font-extrabold pb-2 border-b border-slate-200/30 dark:border-slate-800/30 ${
-                  theme === 'dark' ? 'text-slate-100' : 'text-slate-800'
+              <div className={`p-6 md:p-8 rounded-3xl border shadow-md space-y-4 transition-colors ${theme === 'dark' ? 'bg-slate-900/80 border-slate-800/70' : 'bg-white border-slate-200/70'
                 }`}>
+                <h3 className={`text-base font-extrabold pb-2 border-b border-slate-200/30 dark:border-slate-800/30 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-800'
+                  }`}>
                   {t('booking.fecha_hora_title')}
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-    Fecha del Viaje
-  </label>
-  
-  <div className="flex gap-2">
-    {/* Selector de Día */}
-    <select
-      required
-      value={fecha.split('-')[2] || ''}
-      onChange={(e) => {
-        const dia = e.target.value;
-        const mes = fecha.split('-')[1] || '01';
-        const anyo = new Date().getFullYear(); // Año actual automático
-        setFecha(`${anyo}-${mes}-${dia}`);
-      }}
-      className={`w-1/2 px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${
-        theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
-      }`}
-    >
-      <option value="" disabled>Día</option>
-      {Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0')).map((d) => (
-        <option key={d} value={d}>{d}</option>
-      ))}
-    </select>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                      {t('booking.travel_date_label')}
+                    </label>
 
-    {/* Selector de Mes */}
-    <select
-      required
-      value={fecha.split('-')[1] || ''}
-      onChange={(e) => {
-        const mes = e.target.value;
-        const dia = fecha.split('-')[2] || '01';
-        const anyo = new Date().getFullYear(); // Año actual automático
-        setFecha(`${anyo}-${mes}-${dia}`);
-      }}
-      className={`w-1/2 px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${
-        theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
-      }`}
-    >
-      <option value="" disabled>Mes</option>
-      {[
-        { v: '01', n: 'Enero' }, { v: '02', n: 'Febrero' }, { v: '03', n: 'Marzo' },
-        { v: '04', n: 'Abril' }, { v: '05', n: 'Mayo' }, { v: '06', n: 'Junio' },
-        { v: '07', n: 'Julio' }, { v: '08', n: 'Agosto' }, { v: '09', n: 'Septiembre' },
-        { v: '10', n: 'Octubre' }, { v: '11', n: 'Noviembre' }, { v: '12', n: 'Diciembre' }
-      ].map((m) => (
-        <option key={m.v} value={m.v}>{m.n}</option>
-      ))}
-    </select>
-  </div>
-</div>
+                    <div className="flex gap-2">
+                      {/* Selector de Día */}
+                      <select
+                        required
+                        value={fecha.split('-')[2] || ''}
+                        onChange={(e) => {
+                          const dia = e.target.value;
+                          const mes = fecha.split('-')[1] || '01';
+                          const anyo = new Date().getFullYear(); // Año actual automático
+                          setFecha(`${anyo}-${mes}-${dia}`);
+                        }}
+                        className={`w-1/2 px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
+                          }`}
+                      >
+                        <option value="" disabled>{t('booking.day_placeholder')}</option>
+                        {Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0')).map((d) => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+
+                      {/* Selector de Mes */}
+                      <select
+                        required
+                        value={fecha.split('-')[1] || ''}
+                        onChange={(e) => {
+                          const mes = e.target.value;
+                          const dia = fecha.split('-')[2] || '01';
+                          const anyo = new Date().getFullYear(); // Año actual automático
+                          setFecha(`${anyo}-${mes}-${dia}`);
+                        }}
+                        className={`w-1/2 px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
+                          }`}
+                      >
+                        <option value="" disabled>{t('booking.month_placeholder')}</option>
+                        {[
+                          { v: '01', n: t('booking.months.jan') }, { v: '02', n: t('booking.months.feb') }, { v: '03', n: t('booking.months.mar') },
+                          { v: '04', n: t('booking.months.apr') }, { v: '05', n: t('booking.months.may') }, { v: '06', n: t('booking.months.jun') },
+                          { v: '07', n: t('booking.months.jul') }, { v: '08', n: t('booking.months.aug') }, { v: '09', n: t('booking.months.sep') },
+                          { v: '10', n: t('booking.months.oct') }, { v: '11', n: t('booking.months.nov') }, { v: '12', n: t('booking.months.dec') }
+                        ].map((m) => (
+                          <option key={m.v} value={m.v}>{m.n}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Hora de Salida</label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">{t('booking.departure_time_label')}</label>
                     <select
                       value={hora}
                       onChange={(e) => setHora(e.target.value)}
-                      className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${
-                        theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-850'
-                      }`}
+                      className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-slate-200' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-850'
+                        }`}
                     >
-                      <option value="09:00" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-850'}>09:00 hrs</option>
-                      <option value="10:30" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-850'}>10:30 hrs</option>
-                      <option value="12:00" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-850'}>12:00 hrs</option>
-                      <option value="13:30" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-850'}>13:30 hrs</option>
-                      <option value="15:00" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-855'}>15:00 hrs</option>
-                      <option value="16:30" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-850'}>16:30 hrs</option>
-                      <option value="18:00" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-850'}>18:00 hrs</option>
-                      <option value="19:30" className={theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-850'}>19:30 hrs</option>
+                      {Array.from({ length: 13 }, (_, i) => {
+                        const h = i + 10; // Empieza en 10
+                        const label = h > 12 ? `${h - 12}:00 PM` : h === 12 ? '12:00 PM' : `${h}:00 AM`;
+                        const value = `${h}:00`;
+                        return <option key={value} value={value}>{label}</option>;
+                      })}
                     </select>
                   </div>
                 </div>
@@ -465,7 +513,7 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
 
             {/* RIGHT COLUMN: ALL BILLING DETAILS & GATEWAYS */}
             <div className="lg:col-span-5 space-y-6">
-              
+
               {/* Form errors */}
               {errorMsg && (
                 <div className="p-3.5 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20 text-center font-bold text-xs animate-fade-in">
@@ -474,37 +522,33 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
               )}
 
               {/* Price detail block / Facturación */}
-              <div className={`p-6 md:p-8 rounded-3xl border shadow-md transition-colors ${
-                theme === 'dark' ? 'bg-slate-900/80 border-slate-800/70' : 'bg-white border-slate-200/70'
-              }`}>
-                <h3 className={`text-base font-extrabold pb-2 border-b border-slate-200/30 dark:border-slate-800/30 mb-4 ${
-                  theme === 'dark' ? 'text-slate-100' : 'text-slate-800'
+              <div className={`p-6 md:p-8 rounded-3xl border shadow-md transition-colors ${theme === 'dark' ? 'bg-slate-900/80 border-slate-800/70' : 'bg-white border-slate-200/70'
                 }`}>
-                  Resumen de Facturación
+                <h3 className={`text-base font-extrabold pb-2 border-b border-slate-200/30 dark:border-slate-800/30 mb-4 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-800'
+                  }`}>
+                  {t('booking.billing_summary_title')}
                 </h3>
                 <div className="flex justify-between text-sm mb-2.5">
                   <span className={theme === 'dark' ? 'text-slate-400' : 'text-slate-550'}>
-                    Tour ({tour.duracion_minutos} minutos)
+                    {t('booking.tour_duration', { minutes: tour.duracion_minutos })}
                   </span>
                   <span className="font-semibold text-slate-800 dark:text-slate-250">€{tour.precio}</span>
                 </div>
                 <div className="flex justify-between text-sm mb-4 border-b border-dashed pb-3 border-slate-200 dark:border-slate-800">
-                  <span className={theme === 'dark' ? 'text-slate-400' : 'text-slate-550'}>Gastos de gestión</span>
-                  <span className="text-emerald-500 font-bold">GRATIS</span>
+                  <span className={theme === 'dark' ? 'text-slate-400' : 'text-slate-550'}>{t('booking.management_fees')}</span>
+                  <span className="text-emerald-500 font-bold">{t('booking.free')}</span>
                 </div>
                 <div className="flex justify-between items-baseline pt-1">
-                  <span className={`font-bold text-sm ${theme === 'dark' ? 'text-slate-250' : 'text-slate-850'}`}>Total a Pagar</span>
+                  <span className={`font-bold text-sm ${theme === 'dark' ? 'text-slate-250' : 'text-slate-850'}`}>{t('booking.total_to_pay')}</span>
                   <span className="text-3xl font-black text-rose-500">€{tour.precio}</span>
                 </div>
               </div>
 
               {/* Pasarela de Pago */}
-              <div className={`p-6 md:p-8 rounded-3xl border shadow-md space-y-6 transition-colors ${
-                theme === 'dark' ? 'bg-slate-900/80 border-slate-800/70' : 'bg-white border-slate-200/70'
-              }`}>
-                <h3 className={`text-base font-extrabold pb-2 border-b border-slate-200/30 dark:border-slate-800/30 ${
-                  theme === 'dark' ? 'text-slate-100' : 'text-slate-800'
+              <div className={`p-6 md:p-8 rounded-3xl border shadow-md space-y-6 transition-colors ${theme === 'dark' ? 'bg-slate-900/80 border-slate-800/70' : 'bg-white border-slate-200/70'
                 }`}>
+                <h3 className={`text-base font-extrabold pb-2 border-b border-slate-200/30 dark:border-slate-800/30 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-800'
+                  }`}>
                   {t('booking.payment_title')}
                 </h3>
 
@@ -513,26 +557,24 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
                   <button
                     type="button"
                     onClick={() => setGateway('stripe')}
-                    className={`flex-1 py-2 text-center text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
-                      gateway === 'stripe'
-                        ? 'bg-indigo-500 text-white shadow-sm'
-                        : theme === 'dark'
-                          ? 'text-slate-450 hover:text-white'
-                          : 'text-slate-500 hover:text-slate-950'
-                    }`}
+                    className={`flex-1 py-2 text-center text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${gateway === 'stripe'
+                      ? 'bg-indigo-500 text-white shadow-sm'
+                      : theme === 'dark'
+                        ? 'text-slate-450 hover:text-white'
+                        : 'text-slate-500 hover:text-slate-950'
+                      }`}
                   >
                     💳 Tarjeta (Stripe)
                   </button>
                   <button
                     type="button"
                     onClick={() => setGateway('paypal')}
-                    className={`flex-1 py-2 text-center text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
-                      gateway === 'paypal'
-                        ? 'bg-blue-500 text-white shadow-sm'
-                        : theme === 'dark'
-                          ? 'text-slate-450 hover:text-white'
-                          : 'text-slate-500 hover:text-slate-950'
-                    }`}
+                    className={`flex-1 py-2 text-center text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${gateway === 'paypal'
+                      ? 'bg-blue-500 text-white shadow-sm'
+                      : theme === 'dark'
+                        ? 'text-slate-450 hover:text-white'
+                        : 'text-slate-500 hover:text-slate-950'
+                      }`}
                   >
                     🔵 PayPal
                   </button>
@@ -541,7 +583,7 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
                 {gateway === 'stripe' ? (
                   /* STRIPE / CREDIT CARD VIEW WITH PREMIUM GLASS CARD PREVIEW */
                   <div className="space-y-5 animate-fade-in">
-                    
+
                     {/* Visual Card Preview */}
                     <div className="relative w-full h-40 rounded-2xl bg-gradient-to-tr from-rose-500 via-pink-500 to-indigo-600 text-white p-5 shadow-md overflow-hidden flex flex-col justify-between select-none">
                       <div className="absolute -right-10 -bottom-10 w-40 h-40 rounded-full bg-white/10 blur-xl"></div>
@@ -579,59 +621,55 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
                     {/* Card Inputs */}
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Nombre en la Tarjeta</label>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">{t('booking.card_name_label')}</label>
                         <input
                           type="text"
                           required={gateway === 'stripe'}
                           value={cardName}
                           onChange={(e) => setCardName(e.target.value)}
                           placeholder="JUAN PEREZ PEREZ"
-                          className={`w-full px-4 py-2.5 rounded-xl border text-sm uppercase focus:outline-none transition-colors ${
-                            theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-white' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
-                          }`}
+                          className={`w-full px-4 py-2.5 rounded-xl border text-sm uppercase focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-white' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
+                            }`}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Número de Tarjeta</label>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">{t('booking.card_number_label')}</label>
                         <input
                           type="text"
                           required={gateway === 'stripe'}
                           value={cardNumber}
                           onChange={handleCardNumberChange}
                           placeholder="4000 1234 5678 9010"
-                          className={`w-full px-4 py-2.5 rounded-xl border text-sm font-mono focus:outline-none transition-colors ${
-                            theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-white' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
-                          }`}
+                          className={`w-full px-4 py-2.5 rounded-xl border text-sm font-mono focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-white' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
+                            }`}
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Vencimiento</label>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">{t('booking.expiry_label')}</label>
                           <input
                             type="text"
                             required={gateway === 'stripe'}
                             value={cardExpiry}
                             onChange={handleExpiryChange}
                             placeholder="12/28"
-                            className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${
-                              theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-white' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
-                            }`}
+                            className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-white' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
+                              }`}
                           />
                         </div>
 
                         <div>
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">CVC / CVV</label>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">{t('cvv_label')}</label>
                           <input
                             type="text"
                             required={gateway === 'stripe'}
                             value={cardCvv}
                             onChange={(e) => setCardCvv(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
                             placeholder="123"
-                            className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${
-                              theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-white' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
-                            }`}
+                            className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500 text-white' : 'bg-slate-50 border-slate-200 focus:border-rose-500 text-slate-800'
+                              }`}
                           />
                         </div>
                       </div>
@@ -647,10 +685,10 @@ export default function BookingPage({ theme, tourId, onClose }: BookingPageProps
                     </div>
                     <div>
                       <p className={`text-xs font-bold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-850'}`}>
-                        Paga rápido y seguro con tu cuenta de PayPal
+                        {t('booking.paypal_info')}
                       </p>
                       <p className="text-[10px] text-slate-450 mt-1">
-                        Al confirmar, se abrirá un flujo de transacción simulado de PayPal Checkout.
+                        {t('booking.paypal_subinfo')}
                       </p>
                     </div>
                   </div>

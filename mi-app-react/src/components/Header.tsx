@@ -14,8 +14,8 @@ const Header = ({ theme }: HeaderProps) => {
 
   useEffect(() => {
     const tl = gsap.timeline();
-    tl.fromTo(headerRef.current, 
-      { y: -30, opacity: 0 }, 
+    tl.fromTo(headerRef.current,
+      { y: -30, opacity: 0 },
       { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out' }
     );
     tl.fromTo(titleRef.current,
@@ -31,30 +31,30 @@ const Header = ({ theme }: HeaderProps) => {
   }, []);
 
   return (
-    <header 
+    <header
       ref={headerRef}
       className="text-center py-10 mb-8"
     >
-      <img 
-        src={logo} 
-        alt="Nina Tuk Tours Logo" 
-        className="mx-auto mb-6 w-50 h-40 rounded-full object-cover shadow-lg " 
-      />
-    
-        
-        <h1 
+      <div className="mx-auto mb-6 flex items-center justify-center w-52 h-52 rounded-full overflow-hidden shadow-lg border-2 border-white">
+        <img
+          src={logo}
+          alt="Nina Tuk Tours Logo"
+          className="w-full h-full object-cover scale-110"
+        />
+      </div>
+
+
+      <h1
         ref={titleRef}
-        className={`font-extrabold text-5xl md:text-6xl tracking-tight select-none transition-colors duration-500 ${
-          theme === 'dark' ? 'text-white' : 'text-slate-900'
-        }`}
+        className={`font-extrabold text-5xl md:text-6xl tracking-tight select-none transition-colors duration-500 ${theme === 'dark' ? 'text-white' : 'text-slate-900'
+          }`}
       >
         Nina Tuk Tours
       </h1>
-      <p 
+      <p
         ref={subtitleRef}
-        className={`mt-4 text-base md:text-lg font-medium max-w-xl mx-auto leading-relaxed transition-colors duration-500 ${
-          theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
-        }`}
+        className={`mt-4 text-base md:text-lg font-medium max-w-xl mx-auto leading-relaxed transition-colors duration-500 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
+          }`}
       >
         {t('eslogan')}
       </p>

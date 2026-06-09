@@ -70,7 +70,31 @@ const resources = {
         fecha_hora_title: "2. Fecha y Hora de Salida",
         payment_title: "3. Pasarela de Pago",
         confirm_button: "Confirmar Reserva y Pagar €{{price}}",
-        processing_payment: "Procesando Pago Seguro..."
+        processing_payment: "Procesando Pago Seguro...",
+        full_name_label: "Nombre Completo",
+        email_label: "Correo Electrónico",
+        phone_label: "Teléfono",
+        passengers_label: "Número de Pasajeros",
+        travel_date_label: "Fecha del Viaje",
+        departure_time_label: "Hora de Salida",
+        billing_summary_title: "Resumen de Facturación",
+        tour_duration: "Tour ({{minutes}} minutos)",
+        management_fees: "Gastos de gestión",
+        free: "GRATIS",
+        total_to_pay: "Total a Pagar",
+        card_name_label: "Nombre en la Tarjeta",
+        card_number_label: "Número de Tarjeta",
+        expiry_label: "Vencimiento",
+        cvv_label: "CVC / CVV",
+        paypal_info: "Paga rápido y seguro con tu cuenta de PayPal",
+        paypal_subinfo: "Al confirmar, se abrirá un flujo de transacción simulado de PayPal Checkout.",
+        day_placeholder: "Día",
+        month_placeholder: "Mes",
+        months: {
+          jan: "Enero", feb: "Febrero", mar: "Marzo", apr: "Abril",
+          may: "Mayo", jun: "Junio", jul: "Julio", aug: "Agosto",
+          sep: "Septiembre", oct: "Octubre", nov: "Noviembre", dec: "Diciembre"
+        }
       }
     }
   },
@@ -80,6 +104,7 @@ const resources = {
       boton_reservar: "Book now",
       seleccionar_idioma: "Language",
       personas: "people",
+      persona: "person",
 
       // Features
       features_titulo: "Why Choose Us?",
@@ -141,7 +166,31 @@ const resources = {
         fecha_hora_title: "2. Date and Departure Time",
         payment_title: "3. Payment Gateway",
         confirm_button: "Confirm Booking and Pay €{{price}}",
-        processing_payment: "Processing Secure Payment..."
+        processing_payment: "Processing Secure Payment...",
+        full_name_label: "Full Name",
+        email_label: "Email Address",
+        phone_label: "Phone Number",
+        passengers_label: "Number of Passengers",
+        travel_date_label: "Travel Date",
+        departure_time_label: "Departure Time",
+        billing_summary_title: "Billing Summary",
+        tour_duration: "Tour ({{minutes}} minutes)",
+        management_fees: "Management fees",
+        free: "FREE",
+        total_to_pay: "Total to Pay",
+        card_name_label: "Name on Card",
+        card_number_label: "Card Number",
+        expiry_label: "Expiry Date",
+        cvv_label: "CVC / CVV",
+        paypal_info: "Pay fast and secure with your PayPal account",
+        paypal_subinfo: "Upon confirmation, a simulated PayPal Checkout flow will open.",
+        day_placeholder: "Day",
+        month_placeholder: "Month",
+        months: {
+          jan: "January", feb: "February", mar: "March", apr: "April",
+          may: "May", jun: "June", jul: "July", aug: "August",
+          sep: "September", oct: "October", nov: "November", dec: "December"
+        }
       }
     }
   },
@@ -151,6 +200,7 @@ const resources = {
       boton_reservar: "Zarezerwuj teraz",
       seleccionar_idioma: "Język",
       personas: "ludzie",
+      persona: "osoba",
 
       // Features
       features_titulo: "Dlaczego my?",
@@ -192,7 +242,52 @@ const resources = {
       footer_email: "nina.tuks.es@gmail.com",
       footer_tlf: "+34 641 807 779",
       footer_direccion: "Calle Mayor 1, Madryt, Hiszpania",
-      footer_derechos: "Wszelkie prawa zastrzeżone. Nina Tuk Tours."
+      footer_derechos: "Wszelkie prawa zastrzeżone. Nina Tuk Tours.",
+      // BookingPage
+      booking: {
+        title: "Rezerwacja wycieczki",
+        heading: "Potwierdź i zarezerwuj",
+        loading_details: "Ładowanie szczegółów wycieczki...",
+        back_to_tours: "Powrót do wycieczek",
+        error_no_tour: "Błąd: Wybrana wycieczka nie istnieje.",
+        success_title: "Płatność i rezerwacja potwierdzone!",
+        success_message: "Dziękujemy, {{name}}. Zarejestrowaliśmy Twoją płatność w wysokości €{{price}} za {{tour}}.",
+        code_label: "Kod rezerwacji",
+        fecha_label: "Data wycieczki",
+        hora_label: "Godzina odjazdu",
+        pasajeros_count_label: "Liczba pasażerów",
+        gateway_label: "Bramka płatności",
+        regresar_inicio: "Powrót do strony głównej",
+        personal_data_title: "1. Twoje dane osobowe",
+        fecha_hora_title: "2. Data i godzina odjazdu",
+        payment_title: "3. Bramka płatności",
+        confirm_button: "Potwierdź rezerwację i zapłać €{{price}}",
+        processing_payment: "Przetwarzanie bezpiecznej płatności...",
+        full_name_label: "Imię i nazwisko",
+        email_label: "Adres e-mail",
+        phone_label: "Numer telefonu",
+        passengers_label: "Liczba pasażerów",
+        travel_date_label: "Data podróży",
+        departure_time_label: "Godzina odjazdu",
+        billing_summary_title: "Podsumowanie płatności",
+        tour_duration: "Wycieczka ({{minutes}} minut)",
+        management_fees: "Opłaty manipulacyjne",
+        free: "ZA DARMO",
+        total_to_pay: "Suma do zapłaty",
+        card_name_label: "Imię na karcie",
+        card_number_label: "Numer karty",
+        expiry_label: "Data ważności",
+        cvv_label: "CVC / CVV",
+        paypal_info: "Płać szybko i bezpiecznie za pomocą konta PayPal",
+        paypal_subinfo: "Po potwierdzeniu otworzy się symulowany przepływ PayPal Checkout.",
+        day_placeholder: "Dzień",
+        month_placeholder: "Miesiąc",
+        months: {
+          jan: "Styczeń", feb: "Luty", mar: "Marzec", apr: "Kwiecień",
+          may: "Maj", jun: "Czerwiec", jul: "Lipiec", aug: "Sierpień",
+          sep: "Wrzesień", oct: "Październik", nov: "Listopad", dec: "Grudzień"
+        }
+      }
     }
   },
   it: {
@@ -242,7 +337,52 @@ const resources = {
       footer_email: "nina.tuks.es@gmail.com",
       footer_tlf: "+34 641 807 779",
       footer_direccion: "Calle Mayor 1, Madrid, Spagna",
-      footer_derechos: "Tutti i diritti riservati. Nina Tuk Tours."
+      footer_derechos: "Tutti i diritti riservati. Nina Tuk Tours.",
+      // BookingPage
+      booking: {
+        title: "Prenotazione Tour",
+        heading: "Conferma e Prenota",
+        loading_details: "Caricamento dettagli tour...",
+        back_to_tours: "Torna ai Tour",
+        error_no_tour: "Errore: Il tour selezionato non esiste.",
+        success_title: "Pagamento e Prenotazione Confermati!",
+        success_message: "Grazie, {{name}}. Abbiamo registrato con successo il tuo pagamento di €{{price}} per il {{tour}}.",
+        code_label: "Codice Prenotazione",
+        fecha_label: "Data del Tour",
+        hora_label: "Ora di Partenza",
+        pasajeros_count_label: "Numero di Passeggeri",
+        gateway_label: "Metodo di Pagamento",
+        regresar_inicio: "Torna alla Home",
+        personal_data_title: "1. I Tuoi Dati Personali",
+        fecha_hora_title: "2. Data e Ora di Partenza",
+        payment_title: "3. Metodo di Pagamento",
+        confirm_button: "Conferma Prenotazione e Paga €{{price}}",
+        processing_payment: "Elaborazione Pagamento Sicuro...",
+        full_name_label: "Nome Completo",
+        email_label: "Indirizzo Email",
+        phone_label: "Numero di Telefono",
+        passengers_label: "Numero di Passeggeri",
+        travel_date_label: "Data del Viaggio",
+        departure_time_label: "Ora di Partenza",
+        billing_summary_title: "Riepilogo Fatturazione",
+        tour_duration: "Tour ({{minutes}} minuti)",
+        management_fees: "Spese di gestione",
+        free: "GRATIS",
+        total_to_pay: "Totale da Pagare",
+        card_name_label: "Nome sulla Carta",
+        card_number_label: "Numero della Carta",
+        expiry_label: "Scadenza",
+        cvv_label: "CVC / CVV",
+        paypal_info: "Paga in modo rapido e sicuro con il tuo account PayPal",
+        paypal_subinfo: "Dopo la conferma, si aprirà una procedura di pagamento PayPal simulata.",
+        day_placeholder: "Giorno",
+        month_placeholder: "Mese",
+        months: {
+          jan: "Gennaio", feb: "Febbraio", mar: "Marzo", apr: "Aprile",
+          may: "Maggio", jun: "Giugno", jul: "Luglio", aug: "Agosto",
+          sep: "Settembre", oct: "Ottobre", nov: "Novembre", dec: "Dicembre"
+        }
+      }
     }
   },
   pt: {
@@ -251,6 +391,7 @@ const resources = {
       boton_reservar: "Reservar agora",
       seleccionar_idioma: "Idioma",
       personas: "pessoas",
+      persona: "pessoa",
       
       // Features
       features_titulo: "Por que escolher-nos?",
@@ -276,7 +417,7 @@ const resources = {
       test_3_coment: "Excelente serviço em vários idiomas. Reservar foi muito fácil e pudemos fazer paragens para tirar fotos fantásticas. 10 de 10!",
 
       // FAQ
-      faq_titulo: "Perguntas Frecuentes",
+      faq_titulo: "Perguntas Frequentes",
       faq_subtitulo: "Esclarecemos as suas principais dúvidas sobre os nossos tours.",
       faq_q1: "Quantas pessoas cabem num Tuk Tour?",
       faq_a1: "Os nossos veículos elétricos têm capacidade para até 4 pessoas com total conforto. Se o seu grupo for maior, podemos coordenar vários veículos em caravana.",
@@ -292,7 +433,52 @@ const resources = {
       footer_email: "nina.tuks.es@gmail.com",
       footer_tlf: "+34 641 807 779",
       footer_direccion: "Calle Mayor 1, Madrid, Espanha",
-      footer_derechos: "Todos os direitos reservados. Nina Tuk Tours."
+      footer_derechos: "Todos os direitos reservados. Nina Tuk Tours.",
+      // BookingPage
+      booking: {
+        title: "Reserva de Tour",
+        heading: "Confirmar e Reservar",
+        loading_details: "A carregar detalhes do tour...",
+        back_to_tours: "Voltar aos Tours",
+        error_no_tour: "Erro: O tour selecionado não existe.",
+        success_title: "Pagamento e Reserva Confirmados!",
+        success_message: "Obrigado, {{name}}. Registámos com sucesso o seu pagamento de €{{price}} para o {{tour}}.",
+        code_label: "Código de Reserva",
+        fecha_label: "Data do Tour",
+        hora_label: "Hora de Saída",
+        pasajeros_count_label: "Número de Passageiros",
+        gateway_label: "Método de Pagamento",
+        regresar_inicio: "Voltar ao Início",
+        personal_data_title: "1. Os Seus Dados Pessoais",
+        fecha_hora_title: "2. Data e Hora de Saída",
+        payment_title: "3. Método de Pagamento",
+        confirm_button: "Confirmar Reserva e Pagar €{{price}}",
+        processing_payment: "A processar pagamento seguro...",
+        full_name_label: "Nome Completo",
+        email_label: "E-mail",
+        phone_label: "Telefone",
+        passengers_label: "Número de Passageiros",
+        travel_date_label: "Data da Viagem",
+        departure_time_label: "Hora de Saída",
+        billing_summary_title: "Resumo da Faturação",
+        tour_duration: "Tour ({{minutes}} minutos)",
+        management_fees: "Taxas de gestão",
+        free: "GRÁTIS",
+        total_to_pay: "Total a Pagar",
+        card_name_label: "Nome no Cartão",
+        card_number_label: "Número do Cartão",
+        expiry_label: "Validade",
+        cvv_label: "CVC / CVV",
+        paypal_info: "Pague rápido e seguro com a sua conta PayPal",
+        paypal_subinfo: "Após a confirmação, abrir-se-á um fluxo de transação PayPal simulado.",
+        day_placeholder: "Dia",
+        month_placeholder: "Mês",
+        months: {
+          jan: "Janeiro", feb: "Fevereiro", mar: "Março", apr: "Abril",
+          may: "Maio", jun: "Junho", jul: "Julho", aug: "Agosto",
+          sep: "Setembro", oct: "Outubro", nov: "Novembre", dec: "Dezembro"
+        }
+      }
     }
   },
   fr: {
@@ -301,6 +487,7 @@ const resources = {
       boton_reservar: "Réserver maintenant",
       seleccionar_idioma: "Langue",
       personas: "personnes",
+      persona: "personne",
       
       // Features
       features_titulo: "Pourquoi nous choisir ?",
@@ -323,7 +510,7 @@ const resources = {
       test_2_coment: "Le Tuk Tour est très confortable et très silencieux. Je recommande vivement le tour au coucher du soleil, les lumières de la ville sont magnifiques.",
       test_3_autor: "Katarzyna Kowalska",
       test_3_pais: "Pologne",
-      test_3_coment: "Excellent service en several langues. La réservation a été très simple et nous avons pu faire des arrêts pour de superbes photos. 10 sur 10 !",
+      test_3_coment: "Excellent service en plusieurs langues. La réservation a été très simple et nous avons pu faire des arrêts pour de superbes photos. 10 sur 10 !",
 
       // FAQ
       faq_titulo: "Questions Fréquentes",
@@ -342,7 +529,52 @@ const resources = {
       footer_email: "nina.tuks.es@gmail.com",
       footer_tlf: "+34 641 807 779",
       footer_direccion: "Calle Mayor 1, Madrid, Espagne",
-      footer_derechos: "Tous droits réservés. Nina Tuk Tours."
+      footer_derechos: "Tous droits réservés. Nina Tuk Tours.",
+      // BookingPage
+      booking: {
+        title: "Réservation de Tour",
+        heading: "Confirmer et Réserver",
+        loading_details: "Chargement des détails du tour...",
+        back_to_tours: "Retour aux Tours",
+        error_no_tour: "Erreur : Le tour sélectionné n'existe pas.",
+        success_title: "Paiement et Réservation Confirmés !",
+        success_message: "Merci, {{name}}. Nous avons enregistré avec succès votre paiement de €{{price}} pour le {{tour}}.",
+        code_label: "Code de Réservation",
+        fecha_label: "Date du Tour",
+        hora_label: "Heure de Départ",
+        pasajeros_count_label: "Nombre de Passagers",
+        gateway_label: "Méthode de Paiement",
+        regresar_inicio: "Retour à l'Accueil",
+        personal_data_title: "1. Vos Coordonnées Personnelles",
+        fecha_hora_title: "2. Date et Heure de Départ",
+        payment_title: "3. Méthode de Paiement",
+        confirm_button: "Confirmer la Réservation et Payer €{{price}}",
+        processing_payment: "Traitement du paiement sécurisé...",
+        full_name_label: "Nom Complet",
+        email_label: "Adresse E-mail",
+        phone_label: "Téléphone",
+        passengers_label: "Nombre de Passagers",
+        travel_date_label: "Date du Voyage",
+        departure_time_label: "Heure de Départ",
+        billing_summary_title: "Résumé de la Facturation",
+        tour_duration: "Tour ({{minutes}} minutes)",
+        management_fees: "Frais de gestion",
+        free: "GRATUIT",
+        total_to_pay: "Total à Payer",
+        card_name_label: "Nom sur la Carte",
+        card_number_label: "Numéro de Carte",
+        expiry_label: "Expiration",
+        cvv_label: "CVC / CVV",
+        paypal_info: "Payez rapidement et en toute sécurité avec votre compte PayPal",
+        paypal_subinfo: "Après confirmation, un flux de transaction PayPal simulé s'ouvrira.",
+        day_placeholder: "Jour",
+        month_placeholder: "Mois",
+        months: {
+          jan: "Janvier", feb: "Février", mar: "Mars", apr: "Avril",
+          may: "Mai", jun: "Juin", jul: "Juillet", aug: "Août",
+          sep: "Septembre", oct: "Octobre", nov: "Novembre", dec: "Décembre"
+        }
+      }
     }
   }
 };
