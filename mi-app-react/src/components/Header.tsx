@@ -46,7 +46,7 @@ const Header = ({ theme }: HeaderProps) => {
 
       <h1
         ref={titleRef}
-        className={`font-extrabold text-5xl md:text-6xl tracking-tight select-none transition-colors duration-500 ${theme === 'dark' ? 'text-white' : 'text-slate-900'
+        className={`text-cyan-600 font-extrabold text-5xl md:text-6xl tracking-tight select-none transition-colors duration-500 ${theme === 'dark' ? 'text-white' : 'text-slate-900'
           }`}
       >
         Nina Tuk Tours

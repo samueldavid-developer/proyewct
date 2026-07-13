@@ -187,7 +187,7 @@ const TourList = ({ theme }: TourListProps) => {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    fetch('http://localhost/proyewct/bace.php')
+    fetch('https://ninatuktours.com/bace.php')
       .then((res) => {
         if (!res.ok) throw new Error('Error en la red');
         return res.json();

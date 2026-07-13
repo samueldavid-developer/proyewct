@@ -10,6 +10,9 @@ import Footer from './components/Footer';
 import AdminPanel from './components/AdminPanel';
 import BookingPage from './components/BookingPage';
 import Carrusel from './components/carrusel';
+import CancellationPolicy from './components/CancellationPolicy';
+import TermsAndConditions from './components/TermsAndConditions';
+import PrivacyPolicy from './components/PrivacyPolicy';
 
 // Importación de videos de fondo
 import video1 from './assets/usar.mp4';
@@ -88,6 +91,21 @@ function App() {
     return typeof window !== 'undefined' && window.location.hash === '#/admin';
   });
 
+  // Determinar si estamos en la vista de política de cancelaciones (#/politica-cancelacion)
+  const [isPolicyView, setIsPolicyView] = useState(() => {
+    return typeof window !== 'undefined' && window.location.hash === '#/politica-cancelacion';
+  });
+
+  // Determinar si estamos en la vista de términos y condiciones (#/terminos-condiciones)
+  const [isTermsView, setIsTermsView] = useState(() => {
+    return typeof window !== 'undefined' && window.location.hash === '#/terminos-condiciones';
+  });
+
+  // Determinar si estamos en la vista de política de privacidad (#/politica-privacidad)
+  const [isPrivacyView, setIsPrivacyView] = useState(() => {
+    return typeof window !== 'undefined' && window.location.hash === '#/politica-privacidad';
+  });
+
   // Función para extraer el ID del tour desde el hash (#/reserva?id=...)
   const getBookingTourIdFromHash = () => {
     if (typeof window === 'undefined') return null;
@@ -108,6 +126,9 @@ function App() {
   useEffect(() => {
     const handleHashChange = () => {
       setIsAdminView(window.location.hash === '#/admin');
+      setIsPolicyView(window.location.hash === '#/politica-cancelacion');
+      setIsTermsView(window.location.hash === '#/terminos-condiciones');
+      setIsPrivacyView(window.location.hash === '#/politica-privacidad');
       setBookingTourId(getBookingTourIdFromHash());
     };
     window.addEventListener('hashchange', handleHashChange);
@@ -145,7 +166,7 @@ function App() {
           Se muestra solo en pantallas grandes (Desktop) y si no estamos en el panel de admin.
           El 'overlay' (capa de color encima del video) es crucial para la legibilidad. */}
       {!isAdminView && (
-        <div className="hidden lg:block fixed inset-0 z-10 pointer-events-none overflow-hidden">
+        <div className="fixed inset-0 z-10 pointer-events-none overflow-hidden">
           {customBgType === 'image' && customBgUrl ? (
             <img
               src={customBgUrl}
@@ -209,6 +230,48 @@ function App() {
         {/* Lógica de navegación principal */}
         {isAdminView ? (
           <AdminPanel theme={theme} onClose={() => { window.location.hash = ''; }} />
+        ) : isPolicyView ? (
+          <div className="animate-fade-in">
+            <button
+              onClick={() => { window.location.hash = ''; }}
+              className={`mb-8 flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-colors ${theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
+                }`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+              </svg>
+              Volver al Inicio
+            </button>
+            <CancellationPolicy theme={theme} />
+          </div>
+        ) : isTermsView ? (
+          <div className="animate-fade-in">
+            <button
+              onClick={() => { window.location.hash = ''; }}
+              className={`mb-8 flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-colors ${theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
+                }`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+              </svg>
+              Volver al Inicio
+            </button>
+            <TermsAndConditions theme={theme} />
+          </div>
+        ) : isPrivacyView ? (
+          <div className="animate-fade-in">
+            <button
+              onClick={() => { window.location.hash = ''; }}
+              className={`mb-8 flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-colors ${theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
+                }`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+              </svg>
+              Volver al Inicio
+            </button>
+            <PrivacyPolicy theme={theme} />
+          </div>
         ) : bookingTourId !== null ? (
           <BookingPage theme={theme} tourId={bookingTourId} onClose={() => { window.location.hash = ''; }} />
         ) : (

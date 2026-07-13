@@ -5,7 +5,8 @@ import { initReactI18next } from 'react-i18next';
 const resources = {
   es: {
     translation: {
-      eslogan: "Descubre Madrid de una forma única y ecológica",
+      eslogan: "Madrid se Descubre Mejor cuando Alguien sabe contarla",
+      carrusel_titulo: "Tus experiencias con nosotros",
       boton_reservar: "Reservar ahora",
       seleccionar_idioma: "Idioma",
       personas: "personas",
@@ -49,8 +50,9 @@ const resources = {
       footer_contacto: "Contacto",
       footer_email: "nina.tuks.es@gmail.com",
       footer_tlf: "+34 641 807 779",
-      footer_direccion: "Calle Mayor 1, Madrid, España",
+      footer_direccion: "Paseo de Extremadura 44",
       footer_derechos: "Todos los derechos reservados. Nina Tuk Tours.",
+
       // BookingPage
       booking: {
         title: "Reserva de Tour",
@@ -95,12 +97,74 @@ const resources = {
           may: "Mayo", jun: "Junio", jul: "Julio", aug: "Agosto",
           sep: "Septiembre", oct: "Octubre", nov: "Noviembre", dec: "Diciembre"
         }
+      },
+
+      // Política de Cancelación
+      cancellation: {
+        title: "Política de Cancelaciones y Devoluciones",
+        last_update: "Última actualización: 10 de junio de 2026",
+        intro: "En Nina Tuk Tours, queremos ofrecerte la mejor experiencia en tu viaje. Entendemos que los planes pueden cambiar, por lo que disponemos de la siguiente política para gestionar las cancelaciones de manera justa:",
+        section1_title: "1. Plazos para Cancelaciones",
+        section1_item1: "Más de 48 horas:",
+        section1_item1_desc: "Reembolso del 100% del importe abonado.",
+        section1_item2: "Entre 48 y 24 horas:",
+        section1_item2_desc: "Reembolso del 50% (gastos de gestión y bloqueo de plaza).",
+        section1_item3: "Menos de 24 horas o No-Show:",
+        section1_item3_desc: "No se realizará ningún tipo de devolución. La plaza se reserva exclusivamente para usted.",
+        section2_title: "2. ¿Cómo solicitar una devolución?",
+        section2_intro: "Para garantizar la seguridad de tus fondos y procesar la devolución correctamente, el proceso no es automático. Debe coordinarse con administración:",
+        section2_whatsapp: "WhatsApp Oficial",
+        section2_email: "Correo Electrónico",
+        section2_item1: "Facilite su Nombre completo y el Código/ID de la reserva.",
+        section2_item2: "Nuestro equipo confirmará el plazo y aprobará la devolución manual.",
+        section3_title: "3. Tiempos de reembolso",
+        section3_desc: "Una vez aprobada a través de Stripe, el dinero se enviará de vuelta a la misma tarjeta utilizada. Dependiendo de su entidad bancaria internacional, el saldo puede tardar entre 5 y 10 días laborables en verse reflejado en su cuenta.",
+        footer_text: "Nina Tuk Tours &copy; {{year}} - Compromiso de Transparencia"
+      },
+
+      // Términos y Condiciones
+      terms: {
+        title: "Términos y Condiciones de Uso",
+        last_update: "Última actualización: 10 de junio de 2026",
+        intro: "Al reservar un tour con Nina Tuk Tours, aceptas los términos y condiciones que se detallan a continuación.",
+        section1_title: "1. Aceptación de los Términos",
+        section1_content: "Al reservar un tour con Nina Tuk Tours, el cliente acepta íntegramente los presentes términos y condiciones.",
+        section2_title: "2. Prestación del Servicio",
+        section2_content: "Nina Tuk Tours se compromete a ofrecer el recorrido turístico acordado en la fecha y hora seleccionadas. La empresa se reserva el derecho de modificar el itinerario por motivos de fuerza mayor (condiciones climáticas extremas, cortes de tráfico, indicaciones policiales o de seguridad).",
+        section3_title: "3. Comportamiento del Pasajero",
+        section3_content: "Por razones de seguridad, los pasajeros deben permanecer sentados durante el trayecto y seguir las instrucciones del conductor. Nos reservamos el derecho de interrumpir el servicio sin derecho a reembolso si el comportamiento del cliente pone en riesgo la seguridad del vehículo, del conductor o de terceros.",
+        section4_title: "4. Responsabilidad",
+        section4_content: "Nina Tuk Tours no se hace responsable por la pérdida, robo o daño de objetos personales dejados en el vehículo durante o después del recorrido.",
+        section5_title: "5. Precios y Pagos",
+        section5_content: "Todos los precios incluyen los impuestos aplicables. Los pagos se procesan de forma segura a través de nuestra pasarela de pagos.",
+        footer_text: "Nina Tuk Tours &copy; {{year}} - Todos los derechos reservados"
+      },
+
+      // Política de Privacidad
+      privacy: {
+        title: "Política de Privacidad y Protección de Datos",
+        last_update: "Última actualización: 10 de junio de 2026",
+        intro: "Tu privacidad es importante para nosotros. En Nina Tuk Tours, nos comprometemos a proteger tus datos personales de manera segura y responsable.",
+        section1_title: "1. Recopilación de Datos",
+        section1_content: "Para gestionar tu reserva, recopilamos información personal básica: nombre, dirección de correo electrónico y número de teléfono.",
+        section2_title: "2. Uso de la Información",
+        section2_item1: "Confirmar y gestionar tu reserva.",
+        section2_item2: "Comunicarnos contigo sobre cambios o detalles del punto de recogida.",
+        section2_item3: "Cumplir con obligaciones legales y fiscales.",
+        section3_title: "3. Compartir Datos con Terceros",
+        section3_content: "Nina Tuk Tours NO vende, alquila ni cede tus datos personales a terceros con fines comerciales. Tus datos de pago son procesados directamente por proveedores de pago seguros certificados (Stripe), y nosotros no almacenamos los números de tus tarjetas de crédito o débito.",
+        section4_title: "4. Seguridad",
+        section4_content: "Implementamos medidas técnicas de seguridad (como encriptación SSL) para proteger tu información contra el acceso no autorizado.",
+        section5_title: "5. Tus Derechos",
+        section5_content: "Tienes derecho a acceder, rectificar o solicitar la eliminación de tus datos personales de nuestra base de datos. Para ejercer estos derechos, puedes contactarnos a través de los canales oficiales proporcionados en nuestra página web.",
+        footer_text: "Nina Tuk Tours &copy; {{year}} - Compromiso con la privacidad"
       }
     }
   },
   en: {
     translation: {
-      eslogan: "Discover Madrid in a unique and eco-friendly way",
+      eslogan: "Madrid is best discovered when someone knows how to tell its story",
+      carrusel_titulo: "Your experiences with us",
       boton_reservar: "Book now",
       seleccionar_idioma: "Language",
       personas: "people",
@@ -147,6 +211,7 @@ const resources = {
       footer_tlf: "+34 641 807 779",
       footer_direccion: "Calle Mayor 1, Madrid, Spain",
       footer_derechos: "All rights reserved. Nina Tuk Tours.",
+
       // BookingPage
       booking: {
         title: "Tour Booking",
@@ -191,12 +256,74 @@ const resources = {
           may: "May", jun: "June", jul: "July", aug: "August",
           sep: "September", oct: "October", nov: "November", dec: "December"
         }
+      },
+
+      // Cancellation Policy
+      cancellation: {
+        title: "Cancellation and Refund Policy",
+        last_update: "Last updated: June 10, 2026",
+        intro: "At Nina Tuk Tours, we want to offer you the best experience on your trip. We understand that plans can change, so we have the following policy to manage cancellations fairly:",
+        section1_title: "1. Cancellation Deadlines",
+        section1_item1: "More than 48 hours:",
+        section1_item1_desc: "100% refund of the amount paid.",
+        section1_item2: "Between 48 and 24 hours:",
+        section1_item2_desc: "50% refund (management fees and slot blocking).",
+        section1_item3: "Less than 24 hours or No-Show:",
+        section1_item3_desc: "No refund will be made. The slot is reserved exclusively for you.",
+        section2_title: "2. How to request a refund?",
+        section2_intro: "To ensure the security of your funds and process the refund correctly, the process is not automatic. It must be coordinated with management:",
+        section2_whatsapp: "Official WhatsApp",
+        section2_email: "Email",
+        section2_item1: "Provide your full name and booking code/ID.",
+        section2_item2: "Our team will confirm the deadline and approve the refund manually.",
+        section3_title: "3. Refund Times",
+        section3_desc: "Once approved through Stripe, the money will be sent back to the same card used. Depending on your international bank, the balance may take 5-10 business days to reflect in your account.",
+        footer_text: "Nina Tuk Tours &copy; {{year}} - Commitment to Transparency"
+      },
+
+      // Terms and Conditions
+      terms: {
+        title: "Terms and Conditions of Use",
+        last_update: "Last updated: June 10, 2026",
+        intro: "By booking a tour with Nina Tuk Tours, you accept the terms and conditions detailed below.",
+        section1_title: "1. Acceptance of Terms",
+        section1_content: "By booking a tour with Nina Tuk Tours, the customer fully accepts these terms and conditions.",
+        section2_title: "2. Service Provision",
+        section2_content: "Nina Tuk Tours undertakes to provide the agreed tour at the selected date and time. The company reserves the right to modify the itinerary due to force majeure (extreme weather conditions, traffic disruptions, police or safety instructions).",
+        section3_title: "3. Passenger Behavior",
+        section3_content: "For safety reasons, passengers must remain seated during the journey and follow the driver's instructions. We reserve the right to interrupt the service without refund if the passenger's behavior endangers the safety of the vehicle, driver, or third parties.",
+        section4_title: "4. Liability",
+        section4_content: "Nina Tuk Tours is not responsible for the loss, theft, or damage to personal items left in the vehicle during or after the tour.",
+        section5_title: "5. Prices and Payments",
+        section5_content: "All prices include applicable taxes. Payments are processed securely through our payment gateway.",
+        footer_text: "Nina Tuk Tours &copy; {{year}} - All rights reserved"
+      },
+
+      // Privacy Policy
+      privacy: {
+        title: "Privacy and Data Protection Policy",
+        last_update: "Last updated: June 10, 2026",
+        intro: "Your privacy is important to us. At Nina Tuk Tours, we are committed to protecting your personal data safely and responsibly.",
+        section1_title: "1. Data Collection",
+        section1_content: "To manage your booking, we collect basic personal information: name, email address, and phone number.",
+        section2_title: "2. Use of Information",
+        section2_item1: "Confirm and manage your booking.",
+        section2_item2: "Communicate with you about changes or details of the pickup point.",
+        section2_item3: "Comply with legal and tax obligations.",
+        section3_title: "3. Sharing Data with Third Parties",
+        section3_content: "Nina Tuk Tours DOES NOT sell, rent, or transfer your personal data to third parties for commercial purposes. Your payment data is processed directly by certified secure payment providers (Stripe), and we do not store your credit or debit card numbers.",
+        section4_title: "4. Security",
+        section4_content: "We implement technical security measures (such as SSL encryption) to protect your information from unauthorized access.",
+        section5_title: "5. Your Rights",
+        section5_content: "You have the right to access, correct, or request the deletion of your personal data from our database. To exercise these rights, you can contact us through the official channels provided on our website.",
+        footer_text: "Nina Tuk Tours &copy; {{year}} - Commitment to privacy"
       }
     }
   },
   pl: {
     translation: {
-      eslogan: "Odkryj Madryt w wyjątkowy i ekologiczny sposób",
+      eslogan: "Madryt najlepiej odkrywa się, gdy ktoś potrafi o nim opowiedzieć",
+      carrusel_titulo: "Twoje doświadczenia z nami",
       boton_reservar: "Zarezerwuj teraz",
       seleccionar_idioma: "Język",
       personas: "ludzie",
@@ -243,6 +370,7 @@ const resources = {
       footer_tlf: "+34 641 807 779",
       footer_direccion: "Calle Mayor 1, Madryt, Hiszpania",
       footer_derechos: "Wszelkie prawa zastrzeżone. Nina Tuk Tours.",
+
       // BookingPage
       booking: {
         title: "Rezerwacja wycieczki",
@@ -287,16 +415,78 @@ const resources = {
           may: "Maj", jun: "Czerwiec", jul: "Lipiec", aug: "Sierpień",
           sep: "Wrzesień", oct: "Październik", nov: "Listopad", dec: "Grudzień"
         }
+      },
+
+      // Cancellation Policy
+      cancellation: {
+        title: "Polityka anulacji i zwrotów",
+        last_update: "Ostatnia aktualizacja: 10 czerwca 2026",
+        intro: "W Nina Tuk Tours chcemy zaoferować Ci najlepsze doświadczenie w Twojej podróży. Rozumiemy, że plany mogą się zmienić, dlatego mamy następującą politykę do sprawnego zarządzania anulacjami:",
+        section1_title: "1. Terminy anulacji",
+        section1_item1: "Więcej niż 48 godzin:",
+        section1_item1_desc: "Zwrot 100% zapłaconej kwoty.",
+        section1_item2: "Pomiędzy 48 a 24 godzinami:",
+        section1_item2_desc: "Zwrot 50% (opłaty manipulacyjne i blokada miejsca).",
+        section1_item3: "Mniej niż 24 godziny lub No-Show:",
+        section1_item3_desc: "Nie będzie żadnego zwrotu. Miejsce jest zarezerwowane wyłącznie dla Ciebie.",
+        section2_title: "2. Jak złożyć wniosek o zwrot?",
+        section2_intro: "Aby zapewnić bezpieczeństwo Twoich środków i prawidłowe przetworzenie zwrotu, proces nie jest automatyczny. Należy skontaktować się z zarządem:",
+        section2_whatsapp: "Oficjalny WhatsApp",
+        section2_email: "E-mail",
+        section2_item1: "Podaj imię i nazwisko oraz kod/ID rezerwacji.",
+        section2_item2: "Nasz zespół potwierdzi termin i zatwierdzi zwrot ręcznie.",
+        section3_title: "3. Czas zwrotu",
+        section3_desc: "Po zatwierdzeniu przez Stripe pieniądze zostaną wysłane z powrotem na tę samą kartę. W zależności od Twojej międzynarodowej bankowości saldo może pojawić się na Twoim koncie po 5-10 dniach roboczych.",
+        footer_text: "Nina Tuk Tours &copy; {{year}} - Zobowiązanie do przejrzystości"
+      },
+
+      // Regulamin
+      terms: {
+        title: "Regulamin Użycia",
+        last_update: "Ostatnia aktualizacja: 10 czerwca 2026",
+        intro: "Rezerwując wycieczkę w Nina Tuk Tours, akceptujesz regulamin i warunki opisane poniżej.",
+        section1_title: "1. Akceptacja Warunków",
+        section1_content: "Rezerwując wycieczkę w Nina Tuk Tours, klient w pełni akceptuje niniejszy regulamin i warunki.",
+        section2_title: "2. Świadczenie Usług",
+        section2_content: "Nina Tuk Tours zobowiązuje się do świadczeń uzgodnionej wycieczki turystycznej w wybranym terminie i godzinie. Firma zastrzega sobie prawo do modyfikacji trasy z przyczyn wyższej mocy (ekstremalne warunki pogodowe, zakłócenia ruchu, polecenia policji lub bezpieczeństwa).",
+        section3_title: "3. Zachowanie Pasażera",
+        section3_content: "Ze względów bezpieczeństwa pasażerowie muszą pozostać siedziani podczas podróży i postępować zgodnie z instrukcjami kierowcy. Zastrzegamy sobie prawo do przerwania usługi bez prawa do zwrotu, jeśli zachowanie klienta zagraża bezpieczeństwu pojazdu, kierowcy lub osób trzecich.",
+        section4_title: "4. Odpowiedzialność",
+        section4_content: "Nina Tuk Tours nie ponosi odpowiedzialności za utratę, kradzież lub uszkodzenie przedmiotów osobistych pozostawionych w pojeździe podczas lub po wycieczce.",
+        section5_title: "5. Ceny i Płatności",
+        section5_content: "Wszystkie ceny obejmują obowiązujące podatki. Płatności są przetwarzane bezpiecznie za pośrednictwem naszej bramki płatniczej.",
+        footer_text: "Nina Tuk Tours &copy; {{year}} - Wszelkie prawa zastrzeżone"
+      },
+
+      // Polityka Prywatności
+      privacy: {
+        title: "Polityka Prywatności i Ochrony Danych",
+        last_update: "Ostatnia aktualizacja: 10 czerwca 2026",
+        intro: "Twoja prywatność jest dla nas ważna. W Nina Tuk Tours zobowiązujemy się do bezpiecznego i odpowiedzialnego ochrony Twoich danych osobowych.",
+        section1_title: "1. Zbieranie Danych",
+        section1_content: "Aby zarządzać Twoją rezerwacją, zbieramy podstawowe dane osobowe: imię i nazwisko, adres e-mail oraz numer telefonu.",
+        section2_title: "2. Użycie Informacji",
+        section2_item1: "Potwierdzanie i zarządzanie Twoją rezerwacją.",
+        section2_item2: "Komunikacja z Tobą w sprawie zmian lub szczegółów dotyczących punktu odbioru.",
+        section2_item3: "Spełnienie obowiązków prawnych i podatkowych.",
+        section3_title: "3. Udostępnianie Danych Osobom Trzecim",
+        section3_content: "Nina Tuk Tours NIE sprzedaje, nie wynajmuje i nie przekazuje Twoich danych osobowych osobom trzecim w celach handlowych. Twoje dane płatnicze są przetwarzane bezpośrednio przez certyfikowanych, bezpiecznych dostawców płatności (Stripe), a my nie przechowujemy numerów Twoich kart kredytowych lub debetowych.",
+        section4_title: "4. Bezpieczeństwo",
+        section4_content: "Wdrażamy techniczne środki bezpieczeństwa (takie jak szyfrowanie SSL) w celu ochrony Twoich informacji przed nieautoryzowanym dostępem.",
+        section5_title: "5. Twoje Prawa",
+        section5_content: "Masz prawo dostępu, poprawiania lub żądania usunięcia swoich danych osobowych z naszej bazy danych. Aby skorzystać z tych praw, możesz skontaktować się z nami za pośrednictwem oficjalnych kanałów podanych na naszej stronie internetowej.",
+        footer_text: "Nina Tuk Tours &copy; {{year}} - Zobowiązanie do prywatności"
       }
     }
   },
   it: {
     translation: {
-      eslogan: "Scopri Madrid in modo unico ed ecologico",
+      eslogan: "Madrid si scopre meglio quando qualcuno sa come raccontarla",
+      carrusel_titulo: "Le tue esperienze con noi",
       boton_reservar: "Prenota ora",
       seleccionar_idioma: "Lingua",
       personas: "persone",
-      
+
       // Features
       features_titulo: "Perché sceglierci?",
       features_subtitulo: "Offriamo la migliore esperienza per visitare la capitale spagnola in modo comodo e responsabile.",
@@ -338,6 +528,7 @@ const resources = {
       footer_tlf: "+34 641 807 779",
       footer_direccion: "Calle Mayor 1, Madrid, Spagna",
       footer_derechos: "Tutti i diritti riservati. Nina Tuk Tours.",
+
       // BookingPage
       booking: {
         title: "Prenotazione Tour",
@@ -382,17 +573,41 @@ const resources = {
           may: "Maggio", jun: "Giugno", jul: "Luglio", aug: "Agosto",
           sep: "Settembre", oct: "Ottobre", nov: "Novembre", dec: "Dicembre"
         }
+      },
+
+      // Cancellation Policy
+      cancellation: {
+        title: "Politica di cancellazione e rimborso",
+        last_update: "Ultimo aggiornamento: 10 giugno 2026",
+        intro: "A Nina Tuk Tours, vogliamo offrirti la migliore esperienza nel tuo viaggio. Capiamo che i piani possono cambiare, quindi abbiamo la seguente politica per gestire le cancellazioni in modo equo:",
+        section1_title: "1. Termini di cancellazione",
+        section1_item1: "Più di 48 ore:",
+        section1_item1_desc: "Rimborso del 100% dell'importo pagato.",
+        section1_item2: "Tra 48 e 24 ore:",
+        section1_item2_desc: "Rimborso del 50% (spese di gestione e blocco posto).",
+        section1_item3: "Meno di 24 ore o No-Show:",
+        section1_item3_desc: "Non verrà effettuato alcun rimborso. Il posto è riservato esclusivamente per te.",
+        section2_title: "2. Come richiedere un rimborso?",
+        section2_intro: "Per garantire la sicurezza dei tuoi fondi e processare correttamente il rimborso, il processo non è automatico. Deve essere coordinato con la gestione:",
+        section2_whatsapp: "WhatsApp ufficiale",
+        section2_email: "E-mail",
+        section2_item1: "Fornisci il tuo nome completo e il codice/ID della prenotazione.",
+        section2_item2: "Il nostro team confermerà il termine e approverà manualmente il rimborso.",
+        section3_title: "3. Tempi di rimborso",
+        section3_desc: "Una volta approvato tramite Stripe, il denaro verrà rispedito sulla stessa carta utilizzata. A seconda della tua banca internazionale, il saldo potrebbe richiedere 5-10 giorni lavorativi per riflettersi sul tuo conto.",
+        footer_text: "Nina Tuk Tours &copy; {{year}} - Impegno per la trasparenza"
       }
     }
   },
   pt: {
     translation: {
-      eslogan: "Descubra Madrid de uma forma única e ecológica",
-      boton_reservar: "Reservar agora",
+      eslogan: "Madrid descobre-se melhor quando alguém sabe contá-la",
+      carrusel_titulo: "Suas experiências conosco",
+      boton_reservar: "Reservar ahora",
       seleccionar_idioma: "Idioma",
       personas: "pessoas",
       persona: "pessoa",
-      
+
       // Features
       features_titulo: "Por que escolher-nos?",
       features_subtitulo: "Oferecemos a melhor experiência para conhecer a capital espanhola de forma confortável e responsável.",
@@ -434,6 +649,7 @@ const resources = {
       footer_tlf: "+34 641 807 779",
       footer_direccion: "Calle Mayor 1, Madrid, Espanha",
       footer_derechos: "Todos os direitos reservados. Nina Tuk Tours.",
+
       // BookingPage
       booking: {
         title: "Reserva de Tour",
@@ -476,19 +692,43 @@ const resources = {
         months: {
           jan: "Janeiro", feb: "Fevereiro", mar: "Março", apr: "Abril",
           may: "Maio", jun: "Junho", jul: "Julho", aug: "Agosto",
-          sep: "Setembro", oct: "Outubro", nov: "Novembre", dec: "Dezembro"
+          sep: "Setembro", oct: "Outubro", nov: "Novembro", dec: "Dezembro"
         }
+      },
+
+      // Cancellation Policy
+      cancellation: {
+        title: "Política de cancelamento e reembolso",
+        last_update: "Última atualização: 10 de junho de 2026",
+        intro: "Na Nina Tuk Tours, queremos oferecer-lhe a melhor experiência na sua viagem. Entendemos que os planos podem mudar, então temos a seguinte política para gerir cancelamentos de forma justa:",
+        section1_title: "1. Prazo de cancelamento",
+        section1_item1: "Mais de 48 horas:",
+        section1_item1_desc: "Reembolso de 100% do valor pago.",
+        section1_item2: "Entre 48 e 24 horas:",
+        section1_item2_desc: "Reembolso de 50% (taxas de gestão e bloqueio de vaga).",
+        section1_item3: "Menos de 24 horas ou No-Show:",
+        section1_item3_desc: "Nenhum reembolso será feito. A vaga é reservada exclusivamente para si.",
+        section2_title: "2. Como solicitar um reembolso?",
+        section2_intro: "Para garantir a segurança dos seus fundos e processar o reembolso corretamente, o processo não é automático. Deve ser coordenado com a gestão:",
+        section2_whatsapp: "WhatsApp oficial",
+        section2_email: "E-mail",
+        section2_item1: "Forneça o seu nome completo e o código/ID da reserva.",
+        section2_item2: "A nossa equipa confirmará o prazo e aprovará o reembolso manualmente.",
+        section3_title: "3. Tempo de reembolso",
+        section3_desc: "Depois de aprovado pelo Stripe, o dinheiro será devolvido à mesma cartão utilizada. Dependendo do seu banco internacional, o saldo pode demorar de 5 a 10 dias úteis para aparecer na sua conta.",
+        footer_text: "Nina Tuk Tours &copy; {{year}} - Compromisso com a transparência"
       }
     }
   },
   fr: {
     translation: {
-      eslogan: "Découvrez Madrid de manière unique et écologique",
+      eslogan: "Madrid se découvre mieux quand quelqu'un sait la raconter",
+      carrusel_titulo: "Vos expériences avec nous",
       boton_reservar: "Réserver maintenant",
       seleccionar_idioma: "Langue",
       personas: "personnes",
       persona: "personne",
-      
+
       // Features
       features_titulo: "Pourquoi nous choisir ?",
       features_subtitulo: "Nous offrons la meilleure expérience pour parcourir la capitale espagnole de manière confortable et responsable.",
@@ -530,6 +770,7 @@ const resources = {
       footer_tlf: "+34 641 807 779",
       footer_direccion: "Calle Mayor 1, Madrid, Espagne",
       footer_derechos: "Tous droits réservés. Nina Tuk Tours.",
+
       // BookingPage
       booking: {
         title: "Réservation de Tour",
@@ -574,6 +815,29 @@ const resources = {
           may: "Mai", jun: "Juin", jul: "Juillet", aug: "Août",
           sep: "Septembre", oct: "Octobre", nov: "Novembre", dec: "Décembre"
         }
+      },
+
+      // Cancellation Policy
+      cancellation: {
+        title: "Politique d'annulation et de remboursement",
+        last_update: "Dernière mise à jour : 10 juin 2026",
+        intro: "Chez Nina Tuk Tours, nous voulons vous offrir la meilleure expérience lors de votre voyage. Nous comprenons que les plans peuvent changer, donc nous avons la politique suivante pour gérer les annulations équitablement :",
+        section1_title: "1. Délais d'annulation",
+        section1_item1: "Plus de 48 heures :",
+        section1_item1_desc: "Remboursement à 100 % du montant payé.",
+        section1_item2: "Entre 48 et 24 heures :",
+        section1_item2_desc: "Remboursement à 50 % (frais de gestion et réservation de la place).",
+        section1_item3: "Moins de 24 heures ou No-Show :",
+        section1_item3_desc: "Aucun remboursement ne sera effectué. La place est réservée exclusivement pour vous.",
+        section2_title: "2. Comment demander un remboursement ?",
+        section2_intro: "Pour garantir la sécurité de vos fonds et traiter le remboursement correctement, le processus n'est pas automatique. Il doit être coordonné avec la direction :",
+        section2_whatsapp: "WhatsApp officiel",
+        section2_email: "E-mail",
+        section2_item1: "Fournissez votre nom complet et le code/ID de réservation.",
+        section2_item2: "Notre équipe confirmera le délai et approuvera le remboursement manuellement.",
+        section3_title: "3. Délais de remboursement",
+        section3_desc: "Une fois approuvé par Stripe, l'argent sera renvoyé sur la même carte utilisée. Selon votre banque internationale, le solde peut prendre de 5 à 10 jours ouvrables pour apparaître sur votre compte.",
+        footer_text: "Nina Tuk Tours &copy; {{year}} - Engagement de transparence"
       }
     }
   }

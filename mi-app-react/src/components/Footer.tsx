@@ -41,7 +41,7 @@ const Footer = ({ theme }: FooterProps) => {
               </div>
               <div className="flex flex-col gap-1">
                 <span className={`transition-colors ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>{t('footer_tlf')}</span>
-                <span className={`transition-colors ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>+34 653 830 002</span>
+                <span className={`transition-colors ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>+34 656 383 002 </span>
               </div>
             </li>
             <li className="flex items-center gap-3 group">
@@ -83,6 +83,27 @@ const Footer = ({ theme }: FooterProps) => {
       <div className="pt-8 border-t border-slate-200/30 dark:border-slate-800/20 text-center text-[10px] font-black uppercase tracking-widest">
         <p className={theme === 'dark' ? 'text-slate-400' : 'text-slate-900'}>
           &copy; {new Date().getFullYear()} {t('footer_derechos')} |{' '}
+          <a
+            href="#/politica-cancelacion"
+            className="text-rose-600 hover:text-rose-700 transition-colors duration-300 inline-flex items-center gap-1.5"
+          >
+            Política de Cancelación
+          </a>
+          {' '}|{' '}
+          <a
+            href="#/terminos-condiciones"
+            className="text-rose-600 hover:text-rose-700 transition-colors duration-300 inline-flex items-center gap-1.5"
+          >
+            Términos y Condiciones
+          </a>
+          {' '}|{' '}
+          <a
+            href="#/politica-privacidad"
+            className="text-rose-600 hover:text-rose-700 transition-colors duration-300 inline-flex items-center gap-1.5"
+          >
+            Política de Privacidad
+          </a>
+          {' '}|{' '}
           <a
             href="#/admin"
             className="text-rose-600 hover:text-rose-700 transition-colors duration-300 inline-flex items-center gap-1.5"

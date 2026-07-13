@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
 // Define the API URL
-const API_URL = 'http://localhost/proyewct/admin_api.php';
+const API_URL = 'https://ninatuktours.com/admin_api.php';
 
 interface Tour {
   id: number;
@@ -53,7 +53,7 @@ interface User {
   creado_en: string;
 }
 
-interface CarruselImage {
+interface CarruselItem {
   id: number | string;
   ruta_imagen: string;
 }
@@ -63,16 +63,37 @@ interface AdminPanelProps {
   onClose: () => void;
 }
 
+// Helper functions for JWT
+const getToken = (): string | null => localStorage.getItem('admin_token');
+const setToken = (token: string) => localStorage.setItem('admin_token', token);
+const removeToken = () => localStorage.removeItem('admin_token');
+
+const getAuthHeaders = (): Record<string, string> => {
+  const token = getToken();
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
+
 const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
   const [activeTab, setActiveTab] = useState<'tours' | 'reservations' | 'payments' | 'users' | 'background' | 'carrusel'>('tours');
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return localStorage.getItem('admin_logged_in') === 'true';
+    return !!getToken();
   });
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPass, setLoginPass] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [carruselImages, setCarruselImages] = useState<CarruselImage[]>([]);
+  const [carruselItems, setCarruselItems] = useState<CarruselItem[]>([]);
+  // Helper function to detect video files
+  const isVideo = (url: string): boolean => {
+    const videoExtensions = /\.(mp4|webm|mov|m4v|ogg)$/i;
+    return videoExtensions.test(url);
+  };
   const [carruselUploading, setCarruselUploading] = useState(false);
+  const [openMapReservationId, setOpenMapReservationId] = useState<number | null>(null);
+
+  const handleLogout = useCallback(() => {
+    setIsLoggedIn(false);
+    removeToken();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,9 +109,9 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
         })
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.token) {
         setIsLoggedIn(true);
-        localStorage.setItem('admin_logged_in', 'true');
+        setToken(data.token);
         triggerNotification('¡Bienvenido al Panel de Control!');
       } else {
         triggerNotification(data.error || 'Credenciales incorrectas.', false);
@@ -102,38 +123,37 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
     }
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    localStorage.removeItem('admin_logged_in');
-  };
-
   // Background State
   const [bgType, setBgType] = useState<'video' | 'image'>('video');
   const [bgUrl, setBgUrl] = useState('');
   const [uploadingBg, setUploadingBg] = useState(false);
-  const [bgFormOpen, setBgFormOpen] = useState(false);
-
-  const handleOpenEditBg = () => {
-    setBgFormOpen(true);
-  };
 
   const handleSaveBackground = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({
           action: 'save_settings',
           bg_url: bgUrl,
           bg_type: bgType
         })
       });
+
+      if (res.status === 401) {
+        handleLogout();
+        triggerNotification('Sesión expirada, por favor vuelve a iniciar sesión.', false);
+        return;
+      }
+
       const data = await res.json();
       if (data.success) {
         localStorage.setItem('custom_bg_type', bgType);
         localStorage.setItem('custom_bg_url', bgUrl);
-        setBgFormOpen(false);
         triggerNotification('¡Fondo actualizado con éxito! Recarga la web principal para verlo.');
       } else {
         throw new Error(data.error || 'Error al guardar configuración');
@@ -175,8 +195,15 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
 
       const res = await fetch(`${API_URL}?action=upload_image`, {
         method: 'POST',
+        headers: getAuthHeaders(),
         body: formData
       });
+
+      if (res.status === 401) {
+        handleLogout();
+        triggerNotification('Sesión expirada, por favor vuelve a iniciar sesión.', false);
+        return;
+      }
 
       const data = await res.json();
       if (!res.ok || !data.success) {
@@ -197,10 +224,6 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Modal de Ubicación
-  const [locationModalOpen, setLocationModalOpen] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState('');
 
   // Notifications
   const [notification, setNotification] = useState<{ msg: string, success: boolean } | null>(null);
@@ -235,32 +258,43 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      if (activeTab === 'tours') {
-        const res = await fetch(`${API_URL}?action=get_tours`);
+      // Define endpoints and which require auth
+      const endpoints = [
+        { tab: 'tours', action: 'get_tours', public: true },
+        { tab: 'reservations', action: 'get_reservations', public: false },
+        { tab: 'payments', action: 'get_payments', public: false },
+        { tab: 'users', action: 'get_users', public: false },
+        { tab: 'carrusel', action: 'get_carrusel', public: true },
+        { tab: 'background', action: 'get_settings', public: true },
+      ];
+
+      const endpoint = endpoints.find(e => e.tab === activeTab);
+      if (endpoint) {
+        const headers = endpoint.public ? {} : getAuthHeaders();
+        const res = await fetch(`${API_URL}?action=${endpoint.action}`, { headers });
+
+        if (!endpoint.public && res.status === 401) {
+          handleLogout();
+          triggerNotification('Sesión expirada, por favor vuelve a iniciar sesión.', false);
+          return;
+        }
+
         const data = await res.json();
-        setTours(Array.isArray(data) ? data : []);
-      } else if (activeTab === 'reservations') {
-        const res = await fetch(`${API_URL}?action=get_reservations`);
-        const data = await res.json();
-        setReservations(Array.isArray(data) ? data : []);
-      } else if (activeTab === 'payments') {
-        const res = await fetch(`${API_URL}?action=get_payments`);
-        const data = await res.json();
-        setPayments(Array.isArray(data) ? data : []);
-      } else if (activeTab === 'users') {
-        const res = await fetch(`${API_URL}?action=get_users`);
-        const data = await res.json();
-        setUsers(Array.isArray(data) ? data : []);
-      } else if (activeTab === 'carrusel') {
-        const res = await fetch(`${API_URL}?action=get_carrusel`);
-        const data = await res.json();
-        setCarruselImages(Array.isArray(data) ? data : []);
-      } else if (activeTab === 'background') {
-        const res = await fetch(`${API_URL}?action=get_settings`);
-        const data = await res.json();
-        if (data.success && data.settings) {
-          setBgUrl(data.settings.bg_url || '');
-          setBgType(data.settings.bg_type || 'video');
+        if (activeTab === 'tours') {
+          setTours(Array.isArray(data) ? data : []);
+        } else if (activeTab === 'reservations') {
+          setReservations(Array.isArray(data) ? data : []);
+        } else if (activeTab === 'payments') {
+          setPayments(Array.isArray(data) ? data : []);
+        } else if (activeTab === 'users') {
+          setUsers(Array.isArray(data) ? data : []);
+        } else if (activeTab === 'carrusel') {
+          setCarruselItems(Array.isArray(data) ? data : []);
+        } else if (activeTab === 'background') {
+          if (data.success && data.settings) {
+            setBgUrl(data.settings.bg_url || '');
+            setBgType(data.settings.bg_type || 'video');
+          }
         }
       }
     } catch (error) {
@@ -269,7 +303,7 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
     } finally {
       setLoading(false);
     }
-  }, [activeTab]);
+  }, [activeTab, handleLogout]);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -330,8 +364,13 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
 
         const res = await fetch(`${API_URL}?action=upload_image`, {
           method: 'POST',
+          headers: getAuthHeaders(),
           body: formData
         });
+
+        if (res.status === 401) {
+          throw new Error('Unauthorized');
+        }
 
         const data = await res.json();
         if (!res.ok || !data.success) {
@@ -344,7 +383,12 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
       setTourImagenes((prev) => [...prev, ...uploadedUrls]);
       triggerNotification(`¡${uploadedUrls.length} imagen(es) subida(s) con éxito!`);
     } catch (error) {
-      triggerNotification(error instanceof Error ? error.message : 'Error de conexión al subir la imagen.', false);
+      if (error instanceof Error && error.message === 'Unauthorized') {
+        handleLogout();
+        triggerNotification('Sesión expirada, por favor vuelve a iniciar sesión.', false);
+      } else {
+        triggerNotification(error instanceof Error ? error.message : 'Error de conexión al subir la imagen.', false);
+      }
     } finally {
       setUploadingImage(false);
       e.target.value = '';
@@ -368,9 +412,19 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify(payload)
       });
+
+      if (res.status === 401) {
+        handleLogout();
+        triggerNotification('Sesión expirada, por favor vuelve a iniciar sesión.', false);
+        return;
+      }
+
       const data = await res.json();
       if (data.success) {
         triggerNotification(editingTourId ? 'Tour actualizado.' : 'Tour creado.');
@@ -388,43 +442,81 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    const file = files[0];
+    const isVideoFile = file.type.startsWith('video/');
+
+    // Validation for video duration
+    if (isVideoFile) {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src);
+        if (video.duration > 61) {
+          triggerNotification('El video no puede durar más de 1 minuto.', false);
+          return;
+        }
+        startCarruselUpload(file);
+      };
+      video.src = URL.createObjectURL(file);
+    } else {
+      startCarruselUpload(file);
+    }
+  };
+
+  const startCarruselUpload = async (file: File) => {
     setCarruselUploading(true);
     try {
-      const file = files[0];
       const formData = new FormData();
       formData.append('image', file);
 
       const uploadRes = await fetch(`${API_URL}?action=upload_image`, {
         method: 'POST',
+        headers: getAuthHeaders(),
         body: formData
       });
+
+      if (uploadRes.status === 401) {
+        handleLogout();
+        triggerNotification('Sesión expirada, por favor vuelve a iniciar sesión.', false);
+        return;
+      }
+
       const uploadData = await uploadRes.json();
 
       if (!uploadRes.ok || !uploadData.success) {
-        throw new Error(uploadData.error || 'Error al subir imagen.');
+        throw new Error(uploadData.error || 'Error al subir archivo.');
       }
 
       const saveRes = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({
           action: 'save_carrusel_image',
           ruta_imagen: uploadData.ruta_imagen
         })
       });
+
+      if (saveRes.status === 401) {
+        handleLogout();
+        triggerNotification('Sesión expirada, por favor vuelve a iniciar sesión.', false);
+        return;
+      }
+
       const saveData = await saveRes.json();
 
       if (!saveRes.ok || !saveData.success) {
-        throw new Error(saveData.error || 'Error al guardar imagen en el carrusel.');
+        throw new Error(saveData.error || 'Error al guardar en el carrusel.');
       }
 
-      triggerNotification('Imagen añadida al carrusel con éxito.');
+      triggerNotification('Archivo añadido al carrusel con éxito.');
       fetchData();
     } catch (error) {
-      triggerNotification(error instanceof Error ? error.message : 'Error al subir la imagen.', false);
+      triggerNotification(error instanceof Error ? error.message : 'Error al subir el archivo.', false);
     } finally {
       setCarruselUploading(false);
-      if (e.target) e.target.value = '';
     }
   };
 
@@ -433,9 +525,19 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({ action: 'delete_carrusel', id })
       });
+
+      if (res.status === 401) {
+        handleLogout();
+        triggerNotification('Sesión expirada, por favor vuelve a iniciar sesión.', false);
+        return;
+      }
+
       const data = await res.json();
       if (data.success) {
         triggerNotification('Imagen eliminada del carrusel.');
@@ -453,9 +555,19 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({ action: 'delete_tour', id })
       });
+
+      if (res.status === 401) {
+        handleLogout();
+        triggerNotification('Sesión expirada, por favor vuelve a iniciar sesión.', false);
+        return;
+      }
+
       const data = await res.json();
       if (data.success) {
         triggerNotification('Tour eliminado.');
@@ -470,9 +582,19 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({ action: 'update_reservation_status', id, status })
       });
+
+      if (res.status === 401) {
+        handleLogout();
+        triggerNotification('Sesión expirada, por favor vuelve a iniciar sesión.', false);
+        return;
+      }
+
       const data = await res.json();
       if (data.success) {
         triggerNotification('Estado de reserva actualizado.');
@@ -518,9 +640,19 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify(payload)
       });
+
+      if (res.status === 401) {
+        handleLogout();
+        triggerNotification('Sesión expirada, por favor vuelve a iniciar sesión.', false);
+        return;
+      }
+
       const data = await res.json();
       if (data.success) {
         triggerNotification(editingUserId ? 'Usuario actualizado.' : 'Usuario creado.');
@@ -539,9 +671,19 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({ action: 'delete_user', id })
       });
+
+      if (res.status === 401) {
+        handleLogout();
+        triggerNotification('Sesión expirada, por favor vuelve a iniciar sesión.', false);
+        return;
+      }
+
       const data = await res.json();
       if (data.success) {
         triggerNotification('Usuario eliminado.');
@@ -767,7 +909,7 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
                                   className="p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 transition-colors"
                                   title="Eliminar Tour"
                                 >
-                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 0 00-1-1h-4a1 0 00-1 1v3M4 7h16" /></svg>
                                 </button>
                               </div>
                             </td>
@@ -788,7 +930,6 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
               <div className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'bg-slate-900/40 border-slate-800/60' : 'bg-white border-slate-200/70'}`}>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
-                    {/* ... arriba todo igual ... */}
                     <thead>
                       <tr className={`border-b text-[10px] font-bold uppercase tracking-widest ${theme === 'dark' ? 'border-slate-800 text-slate-400 bg-slate-950/40' : 'border-slate-100 text-slate-500 bg-slate-50/50'}`}>
                         <th className="py-4 px-6">Reserva</th>
@@ -797,14 +938,13 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
                         <th className="py-4 px-6">Fecha & Hora</th>
                         <th className="py-4 px-6">Personas</th>
                         <th className="py-4 px-6">Total</th>
-                        <th className="py-4 px-6">Recogida</th> {/* <-- TU NUEVA COLUMNA */}
+                        <th className="py-4 px-6">Recogida</th>
                         <th className="py-4 px-6">Estado</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/40">
                       {reservations.length === 0 ? (
                         <tr>
-                          {/* CORREGIDO: Cambié colSpan de 7 a 8 porque ahora tienes 8 columnas */}
                           <td colSpan={8} className={`py-12 text-center text-sm font-medium ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>No hay reservas registradas.</td>
                         </tr>
                       ) : (
@@ -827,40 +967,61 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
                             </td>
                             <td className="py-4 px-6 text-sm font-bold text-center md:text-left">{r.cantidad_personas}</td>
                             <td className="py-4 px-6 text-sm font-black text-rose-500">€{r.total_pagar}</td>
-
                             <td className="py-4 px-6">
-                              <div className="flex flex-col gap-1 max-w-[150px]">
-                                <span className="truncate text-xs font-medium" title={r.punto_recogida}>
-                                  {r.punto_recogida || 'No especificado'}
-                                </span>
-                                {r.punto_recogida && (
-                                  <button
-                                    onClick={() => {
-                                      setSelectedLocation(r.punto_recogida || '');
-                                      setLocationModalOpen(true);
-                                    }}
-                                    className="text-[10px] font-black uppercase tracking-widest text-indigo-500 hover:text-indigo-600 text-left"
-                                  >
-                                    Ver ubicación
-                                  </button>
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-slate-500 dark:text-slate-300 max-w-[150px] truncate">
+                                    {r.punto_recogida || 'No especificado'}
+                                  </span>
+                                  {r.punto_recogida && (
+                                    <>
+                                      <button
+                                        onClick={() => setOpenMapReservationId(openMapReservationId === r.id ? null : r.id)}
+                                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
+                                        title="Ver mapa"
+                                      >
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                      </button>
+                                      <a
+                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.punto_recogida)}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 transition-colors"
+                                        title="Abrir en Google Maps"
+                                      >
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                        </svg>
+                                      </a>
+                                    </>
+                                  )}
+                                </div>
+                                {openMapReservationId === r.id && r.punto_recogida && (
+                                  <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
+                                    <iframe
+                                      width="100%"
+                                      height="250"
+                                      frameBorder="0"
+                                      style={{ border: 0 }}
+                                      src={`https://maps.google.com/maps?q=${encodeURIComponent(r.punto_recogida)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                                      allowFullScreen
+                                    ></iframe>
+                                  </div>
                                 )}
                               </div>
                             </td>
-
                             <td className="py-4 px-6">
                               <select
                                 value={r.estado_reserva}
                                 onChange={(e) => handleUpdateReservationStatus(r.id, e.target.value)}
-                                className={`text-[10px] font-black uppercase tracking-widest rounded-lg px-3 py-2 focus:outline-none cursor-pointer border transition-all w-full ${r.estado_reserva === 'confirmada'
-                                  ? 'bg-emerald-500/15 border-emerald-500/20 text-emerald-600 dark:bg-emerald-500/10'
-                                  : r.estado_reserva === 'pendiente'
-                                    ? 'bg-amber-500/15 border-amber-500/20 text-amber-600 dark:bg-amber-500/10'
-                                    : 'bg-rose-500/15 border-rose-500/20 text-rose-500 dark:bg-rose-500/10'
-                                  }`}
+                                className="text-xs font-semibold border rounded-lg px-2 py-1"
                               >
-                                <option value="pendiente" className="bg-slate-900 text-white">Pendiente</option>
-                                <option value="confirmada" className="bg-slate-900 text-white">Confirmada</option>
-                                <option value="cancelada" className="bg-slate-900 text-white">Cancelada</option>
+                                <option value="pendiente">Pendiente</option>
+                                <option value="confirmada">Confirmada</option>
+                                <option value="cancelada">Cancelada</option>
                               </select>
                             </td>
                           </tr>
@@ -957,7 +1118,6 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
                         <th className="py-4 px-6">ID</th>
                         <th className="py-4 px-6">Nombre Completo</th>
                         <th className="py-4 px-6">Email</th>
-                        <th className="py-4 px-6">Contraseña</th>
                         <th className="py-4 px-6">Teléfono</th>
                         <th className="py-4 px-6 text-center">Idioma</th>
                         <th className="py-4 px-6">Fecha Registro</th>
@@ -967,22 +1127,19 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/40">
                       {users.length === 0 ? (
                         <tr>
-                          <td colSpan={8} className={`py-12 text-center text-sm font-medium ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>No hay usuarios guardados.</td>
+                          <td colSpan={7} className={`py-12 text-center text-sm font-medium ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>No hay usuarios registrados.</td>
                         </tr>
                       ) : (
                         users.map((u) => (
                           <tr key={u.id} className={`hover:bg-slate-50/20 dark:hover:bg-slate-900/10 transition-colors`}>
-                            <td className="py-4 px-6 text-sm font-bold">{u.id}</td>
-                            <td className="py-4 px-6 text-sm font-bold text-slate-850 dark:text-slate-100">{u.nombre}</td>
-                            <td className="py-4 px-6 text-sm text-slate-450">{u.email}</td>
-                            <td className="py-4 px-6 text-sm font-mono text-slate-450 select-none">••••••••</td>
-                            <td className="py-4 px-6 text-sm font-semibold">{u.telefono || '—'}</td>
-                            <td className="py-4 px-6 text-center">
-                              <span className="text-[10px] font-black uppercase bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">
-                                {u.idioma_preferido}
-                              </span>
+                            <td className="py-4 px-6 text-sm font-bold">#{u.id}</td>
+                            <td className="py-4 px-6">
+                              <p className={`font-bold text-sm ${theme === 'dark' ? 'text-slate-100' : 'text-slate-800'}`}>{u.nombre}</p>
                             </td>
-                            <td className="py-4 px-6 text-xs text-slate-450">{u.creado_en}</td>
+                            <td className="py-4 px-6 text-sm text-slate-600 dark:text-slate-400">{u.email}</td>
+                            <td className="py-4 px-6 text-sm text-slate-600 dark:text-slate-400">{u.telefono || 'N/A'}</td>
+                            <td className="py-4 px-6 text-center text-xs font-semibold uppercase">{u.idioma_preferido}</td>
+                            <td className="py-4 px-6 text-xs font-semibold text-slate-450">{u.creado_en}</td>
                             <td className="py-4 px-6 text-right">
                               <div className="flex justify-end gap-2">
                                 <button
@@ -997,7 +1154,7 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
                                   className="p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 transition-colors"
                                   title="Eliminar Usuario"
                                 >
-                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 0 00-1-1h-4a1 0 00-1 1v3M4 7h16" /></svg>
                                 </button>
                               </div>
                             </td>
@@ -1014,419 +1171,293 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
           {/* TAB CARRUSEL */}
           {activeTab === 'carrusel' && (
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <h2 className={`text-xl font-extrabold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Carrusel Web</h2>
-                  <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Gestiona las imágenes que rotan en la página pública.</p>
-                </div>
-                <label className="inline-flex items-center gap-3 cursor-pointer bg-rose-500 hover:bg-rose-600 text-white px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-lg shadow-rose-500/25 active:scale-95">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
-                  <span>{carruselUploading ? 'Subiendo Imagen...' : 'Añadir Imagen al Carrusel'}</span>
+              <div className="flex items-center justify-between">
+                <h2 className={`text-xl font-extrabold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Gestión del Carrusel</h2>
+                <label className={`flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm ${carruselUploading ? 'opacity-70 cursor-wait' : 'cursor-pointer'}`}>
+                  {carruselUploading ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+                  )}
+                  {carruselUploading ? 'Subiendo...' : 'Subir Archivo'}
                   <input
                     type="file"
-                    accept="image/*"
-                    onChange={handleCarruselFileUpload}
                     className="hidden"
+                    accept="image/*,video/*"
+                    onChange={handleCarruselFileUpload}
                     disabled={carruselUploading}
                   />
                 </label>
               </div>
 
-              <div className={`grid gap-4 sm:grid-cols-2 xl:grid-cols-3 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
-                {carruselImages.length === 0 ? (
-                  <div className={`col-span-full rounded-3xl border p-10 text-center ${theme === 'dark' ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200'}`}>
-                    No hay imágenes en el carrusel.
+              <div className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'bg-slate-900/40 border-slate-800/60' : 'bg-white border-slate-200/70'}`}>
+                {carruselItems.length === 0 ? (
+                  <div className="py-16 text-center">
+                    <p className={`text-sm font-medium ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>No hay archivos en el carrusel.</p>
                   </div>
                 ) : (
-                  carruselImages.map((item) => (
-                    <div key={item.id} className={`rounded-3xl overflow-hidden border shadow-sm transition-colors ${theme === 'dark' ? 'bg-slate-900/70 border-slate-800' : 'bg-white border-slate-200'}`}>
-                      <div className="relative overflow-hidden">
-                        <img src={item.ruta_imagen} alt={`Carrusel ${item.id}`} className="w-full h-56 object-cover" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+                    {carruselItems.map((item) => (
+                      <div key={item.id} className="relative group rounded-2xl overflow-hidden border aspect-video">
+                        {isVideo(item.ruta_imagen) ? (
+                          <video
+                            src={item.ruta_imagen}
+                            muted
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <img
+                            src={item.ruta_imagen}
+                            alt="Carrusel"
+                            className="w-full h-full object-cover"
+                          />
+                        )}
                         <button
                           onClick={() => handleDeleteCarrusel(item.id)}
-                          className="absolute top-3 right-3 inline-flex items-center justify-center w-10 h-10 rounded-full bg-rose-500/90 text-white hover:bg-rose-600 transition-all shadow-lg active:scale-90"
-                          title="Eliminar imagen"
+                          className="absolute top-2 right-2 bg-rose-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                       </div>
-                      <div className="p-4 text-xs text-slate-400 break-words">{item.ruta_imagen}</div>
-                    </div>
-                  ))
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
           )}
 
-          {/* TAB BACKGROUND CONFIG */}
+          {/* TAB BACKGROUND */}
           {activeTab === 'background' && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className={`text-xl font-extrabold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Gestión de Fondo Web</h2>
-                <button
-                  onClick={handleOpenEditBg}
-                  className="flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors shadow-sm"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                  Configurar Fondo
-                </button>
-              </div>
+              <h2 className={`text-xl font-extrabold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Fondo de la Web</h2>
 
-              <div className={`p-8 rounded-3xl border text-center transition-colors ${theme === 'dark' ? 'bg-slate-900/40 border-slate-800/60' : 'bg-white border-slate-200/70'}`}>
-                <div className="max-w-md mx-auto">
-                  <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-indigo-500/10 text-indigo-500 border border-indigo-500/20`}>
-                    {bgType === 'video' ? (
-                      <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    ) : (
-                      <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    )}
-                  </div>
-                  <h3 className={`text-lg font-black mb-2 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                    Fondo Actual: {bgType === 'video' ? 'Vídeo Personalizado' : 'Imagen Estática'}
-                  </h3>
-                  <p className={`text-xs font-medium mb-6 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
-                    {bgUrl ? `Ubicación: ${bgUrl}` : 'Usando fondos predeterminados del sistema'}
-                  </p>
-
-                  {bgUrl && (
-                    <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 aspect-video mb-6 relative group">
-                      {bgType === 'video' ? (
-                        <video src={bgUrl} muted autoPlay loop className="w-full h-full object-cover" />
-                      ) : (
-                        <img src={bgUrl} alt="Vista previa" className="w-full h-full object-cover" />
-                      )}
-                      <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <span className="text-white text-[10px] font-bold uppercase tracking-widest bg-slate-900/80 px-3 py-1.5 rounded-full border border-white/20">Vista Previa Actual</span>
-                      </div>
+              <div className={`overflow-hidden rounded-2xl border p-6 ${theme === 'dark' ? 'bg-slate-900/40 border-slate-800/60' : 'bg-white border-slate-200/70'}`}>
+                <form onSubmit={handleSaveBackground} className="space-y-6">
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-widest text-slate-500 block mb-3">Tipo de Fondo</label>
+                    <div className="flex gap-4">
+                      <label className={`flex items-center gap-2 px-4 py-3 rounded-xl border cursor-pointer transition-all ${bgType === 'video' ? 'border-rose-500 bg-rose-500/10 text-rose-500' : theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'}`}>
+                        <input type="radio" name="bgType" value="video" checked={bgType === 'video'} onChange={() => setBgType('video')} className="sr-only" />
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        <span className="text-sm font-semibold">Video</span>
+                      </label>
+                      <label className={`flex items-center gap-2 px-4 py-3 rounded-xl border cursor-pointer transition-all ${bgType === 'image' ? 'border-rose-500 bg-rose-500/10 text-rose-500' : theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'}`}>
+                        <input type="radio" name="bgType" value="image" checked={bgType === 'image'} onChange={() => setBgType('image')} className="sr-only" />
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span className="text-sm font-semibold">Imagen</span>
+                      </label>
                     </div>
-                  )}
+                  </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-widest text-slate-500 block mb-3">URL del Fondo</label>
+                    <input
+                      type="text"
+                      value={bgUrl}
+                      onChange={(e) => setBgUrl(e.target.value)}
+                      placeholder="https://ejemplo.com/imagen.jpg"
+                      className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:border-rose-500 transition-all ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-widest text-slate-500 block mb-3">O subir un archivo</label>
+                    <label className="flex flex-col items-center justify-center gap-2 px-4 py-8 rounded-xl border-2 border-dashed cursor-pointer transition-all hover:border-rose-500 hover:bg-rose-500/5">
+                      {uploadingBg ? (
+                        <div className="w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <svg className="w-8 h-8 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                          <span className="text-sm font-semibold">Haz clic para subir</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept={bgType === 'image' ? 'image/*' : 'video/*'}
+                        onChange={handleBgFileUpload}
+                        disabled={uploadingBg}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="flex justify-end pt-4">
                     <button
-                      onClick={handleOpenEditBg}
-                      className="py-3 px-6 rounded-xl border-2 font-bold text-xs uppercase tracking-wider transition-all border-indigo-500 text-indigo-500 hover:bg-indigo-500 hover:text-white"
+                      type="submit"
+                      className="px-6 py-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs uppercase tracking-widest transition-all shadow-lg shadow-rose-500/25"
                     >
-                      Editar Configuración
-                    </button>
-                    <button
-                      onClick={() => {
-                        setBgUrl('');
-                        localStorage.removeItem('custom_bg_url');
-                        triggerNotification('Se ha restablecido el fondo predeterminado.');
-                      }}
-                      className="py-3 px-6 rounded-xl border-2 font-bold text-xs uppercase tracking-wider transition-all border-slate-300 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-                    >
-                      Restablecer
+                      Guardar Cambios
                     </button>
                   </div>
-                </div>
+                </form>
               </div>
             </div>
           )}
         </div>
       )}
 
-      {/* MODAL TOUR CRUD FORM */}
+      {/* Tour Form Modal */}
       {tourFormOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className={`w-full max-w-xl rounded-3xl p-6 md:p-8 shadow-2xl border transition-colors max-h-[90vh] overflow-y-auto ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'
-            }`}>
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200/40 dark:border-slate-800/40 mb-6">
-              <h3 className="text-xl font-black">{editingTourId ? 'Editar Tour' : 'Nuevo Tour'}</h3>
-              <button
-                onClick={() => setTourFormOpen(false)}
-                className={`p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none`}
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className={`w-full max-w-2xl mx-4 p-8 rounded-3xl border shadow-2xl transition-all ${theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className={`text-2xl font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                {editingTourId ? 'Editar Tour' : 'Crear Tour'}
+              </h2>
+              <button onClick={() => setTourFormOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
 
-            <form onSubmit={handleSaveTour} className="space-y-4">
+            <form onSubmit={handleSaveTour} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="md:col-span-3">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1.5">Nombre (Español)</label>
+                <div className="md:col-span-1">
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500 block mb-2">Nombre (ES)</label>
                   <input
                     type="text"
                     required
                     value={tourNombreEs}
                     onChange={(e) => setTourNombreEs(e.target.value)}
-                    className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500' : 'bg-slate-50 border-slate-200 focus:border-rose-500'
-                      }`}
+                    className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:border-rose-500 transition-all ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
                   />
                 </div>
-                <div className="md:col-span-3">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1.5">Nombre (Inglés)</label>
+                <div className="md:col-span-1">
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500 block mb-2">Nombre (EN)</label>
                   <input
                     type="text"
                     required
                     value={tourNombreEn}
                     onChange={(e) => setTourNombreEn(e.target.value)}
-                    className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500' : 'bg-slate-50 border-slate-200 focus:border-rose-500'
-                      }`}
+                    className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:border-rose-500 transition-all ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
                   />
                 </div>
-                <div className="md:col-span-3">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1.5">Nombre (Polaco)</label>
+                <div className="md:col-span-1">
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500 block mb-2">Nombre (PL)</label>
                   <input
                     type="text"
                     required
                     value={tourNombrePl}
                     onChange={(e) => setTourNombrePl(e.target.value)}
-                    className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500' : 'bg-slate-50 border-slate-200 focus:border-rose-500'
-                      }`}
+                    className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:border-rose-500 transition-all ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1.5">Duración (min)</label>
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500 block mb-2">Precio (€)</label>
                   <input
                     type="number"
                     required
-                    min={1}
-                    value={tourDuracion}
-                    onChange={(e) => setTourDuracion(parseInt(e.target.value))}
-                    className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500' : 'bg-slate-50 border-slate-200 focus:border-rose-500'
-                      }`}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1.5">Precio (€)</label>
-                  <input
-                    type="number"
-                    required
-                    min={1}
+                    min="0"
                     step="0.01"
                     value={tourPrecio}
-                    onChange={(e) => setTourPrecio(parseFloat(e.target.value))}
-                    className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500' : 'bg-slate-50 border-slate-200 focus:border-rose-500'
-                      }`}
+                    onChange={(e) => setTourPrecio(parseFloat(e.target.value) || 0)}
+                    className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:border-rose-500 transition-all ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1.5">Capacidad</label>
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500 block mb-2">Duración (min)</label>
                   <input
                     type="number"
                     required
-                    min={1}
-                    value={tourCapacidad}
-                    onChange={(e) => setTourCapacidad(parseInt(e.target.value))}
-                    className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500' : 'bg-slate-50 border-slate-200 focus:border-rose-500'
-                      }`}
+                    min="1"
+                    value={tourDuracion}
+                    onChange={(e) => setTourDuracion(parseInt(e.target.value) || 0)}
+                    className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:border-rose-500 transition-all ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
                   />
                 </div>
-              </div>
-
-              <div className="pt-2 border-t border-slate-200/40 dark:border-slate-800/40">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1.5">Imágenes del Slider</label>
-                <div className={`p-4 mb-4 rounded-xl border border-dashed text-center transition-all ${theme === 'dark' ? 'bg-slate-950/40 border-slate-800 hover:border-rose-500' : 'bg-slate-50 border-slate-200 hover:border-rose-500'
-                  }`}>
-                  {uploadingImage ? (
-                    <div className="flex flex-col items-center justify-center gap-2 py-2">
-                      <div className="w-5 h-5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
-                      <span className="text-xs font-bold text-rose-500">Subiendo...</span>
-                    </div>
-                  ) : (
-                    <label className="w-full flex flex-col items-center justify-center cursor-pointer py-2">
-                      <svg className="w-8 h-8 text-slate-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                      <span className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 text-center">Subir archivos desde tu PC</span>
-                      <input type="file" accept="image/*" multiple onChange={handleFileUpload} className="hidden" />
-                    </label>
-                  )}
-                </div>
-
-                <div className="flex gap-2 mb-3">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500 block mb-2">Capacidad Máx</label>
                   <input
-                    type="text"
-                    placeholder="O escribe ruta manual..."
-                    value={newImageInput}
-                    onChange={(e) => setNewImageInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddTourImage(e)}
-                    className={`flex-1 px-4 py-2 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500' : 'bg-slate-50 border-slate-200 focus:border-rose-500'
-                      }`}
+                    type="number"
+                    required
+                    min="1"
+                    value={tourCapacidad}
+                    onChange={(e) => setTourCapacidad(parseInt(e.target.value) || 4)}
+                    className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:border-rose-500 transition-all ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
                   />
-                  <button type="button" onClick={() => handleAddTourImage()} className="bg-indigo-500 text-white font-bold text-[10px] uppercase tracking-wider px-4 rounded-xl">Añadir</button>
                 </div>
+              </div>
 
-                <div className="space-y-1.5 max-h-40 overflow-y-auto p-2 bg-slate-100/50 dark:bg-slate-950/50 rounded-xl border border-slate-200/50 dark:border-slate-800/50">
-                  {tourImagenes.map((img, i) => (
-                    <div key={i} className={`flex items-center gap-3 py-2 px-3 rounded-lg border text-xs font-semibold ${theme === 'dark' ? 'bg-slate-900 border-slate-800/60' : 'bg-white border-slate-200/60'
-                      }`}>
-                      <div className="w-8 h-8 rounded-md overflow-hidden flex-shrink-0 bg-slate-100 dark:bg-slate-950">
-                        <img src={img} className="w-full h-full object-cover" alt="preview" onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/150')} />
-                      </div>
-                      <span className="truncate flex-1 text-slate-500 dark:text-slate-400 font-mono text-[9px]">{img}</span>
-                      <button type="button" onClick={() => handleRemoveTourImage(i)} className="text-rose-500 hover:text-rose-700 transition-colors p-1.5 rounded-lg hover:bg-rose-500/10"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+              <div>
+                <label className="text-xs font-bold uppercase tracking-widest text-slate-500 block mb-3">Imágenes</label>
+                <div className="space-y-3">
+                  {tourImagenes.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2">
+                      {tourImagenes.map((img, idx) => (
+                        <div key={idx} className="relative aspect-video rounded-xl overflow-hidden border">
+                          <img src={img} alt={`Imagen ${idx + 1}`} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTourImage(idx)}
+                            className="absolute top-1 right-1 bg-rose-500 text-white p-1 rounded-full"
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="pt-4 flex justify-end gap-3">
-                <button type="button" onClick={() => setTourFormOpen(false)} className={`px-4 py-2.5 rounded-xl font-bold text-xs uppercase transition-colors border ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white' : 'bg-white border-slate-200 text-slate-500'}`}>Cancelar</button>
-                <button type="submit" className="bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs uppercase px-6 py-2.5 rounded-xl shadow-sm">Guardar Cambios</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL USER CRUD FORM */}
-      {userFormOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className={`w-full max-w-md rounded-3xl p-6 md:p-8 shadow-2xl border transition-colors ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'
-            }`}>
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200/40 dark:border-slate-800/40 mb-6">
-              <h3 className="text-xl font-black">{editingUserId ? 'Editar Usuario' : 'Nuevo Usuario'}</h3>
-              <button onClick={() => setUserFormOpen(false)} className={`p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none`}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
-            </div>
-            <form onSubmit={handleSaveUser} className="space-y-4">
-              <div>
-                <label className="text-xs font-bold uppercase text-slate-400 block mb-1.5">Nombre Completo</label>
-                <input type="text" required value={userNombre} onChange={(e) => setUserNombre(e.target.value)} className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500' : 'bg-slate-50 border-slate-200 focus:border-rose-500'}`} />
-              </div>
-              <div>
-                <label className="text-xs font-bold uppercase text-slate-400 block mb-1.5">Email</label>
-                <input type="email" required value={userEmail} onChange={(e) => setUserEmail(e.target.value)} className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500' : 'bg-slate-50 border-slate-200 focus:border-rose-500'}`} />
-              </div>
-              <div>
-                <label className="text-xs font-bold uppercase text-slate-400 block mb-1.5">Teléfono</label>
-                <input type="tel" value={userTelefono} onChange={(e) => setUserTelefono(e.target.value)} className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500' : 'bg-slate-50 border-slate-200 focus:border-rose-500'}`} />
-              </div>
-              <div>
-                <label className="text-xs font-bold uppercase text-slate-400 block mb-1.5">Contraseña</label>
-                <input type="password" required={editingUserId === null} placeholder={editingUserId !== null ? "Dejar en blanco para no cambiar" : "Contraseña"} value={userContrasena} onChange={(e) => setUserContrasena(e.target.value)} className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500' : 'bg-slate-50 border-slate-200 focus:border-rose-500'}`} />
-              </div>
-              <div>
-                <label className="text-xs font-bold uppercase text-slate-400 block mb-1.5">Idioma Preferido</label>
-                <select value={userIdioma} onChange={(e) => setUserIdioma(e.target.value)} className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-rose-500' : 'bg-slate-50 border-slate-200 focus:border-rose-500'}`}>
-                  <option value="es" className="bg-slate-900 text-white">Español</option>
-                  <option value="en" className="bg-slate-900 text-white">Inglés</option>
-                  <option value="pl" className="bg-slate-900 text-white">Polaco</option>
-                  <option value="it" className="bg-slate-900 text-white">Italiano</option>
-                  <option value="pt" className="bg-slate-900 text-white">Portugués</option>
-                  <option value="fr" className="bg-slate-900 text-white">Francés</option>
-                </select>
-              </div>
-              <div className="pt-4 flex justify-end gap-3">
-                <button type="button" onClick={() => setUserFormOpen(false)} className={`px-4 py-2.5 rounded-xl font-bold text-xs uppercase transition-colors border ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white' : 'bg-white border-slate-200 text-slate-500'}`}>Cancelar</button>
-                <button type="submit" className="bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs uppercase px-6 py-2.5 rounded-xl shadow-sm">Guardar Cambios</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL BACKGROUND CONFIG FORM */}
-      {bgFormOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className={`w-full max-w-md rounded-3xl p-6 md:p-8 shadow-2xl border transition-colors ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'
-            }`}>
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200/40 dark:border-slate-800/40 mb-6">
-              <h3 className="text-xl font-black">Configurar Fondo Web</h3>
-              <button
-                onClick={() => setBgFormOpen(false)}
-                className={`p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none`}
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
-              <h4 className="text-amber-600 dark:text-amber-400 font-bold text-[10px] uppercase tracking-widest flex items-center gap-2 mb-2">
-                ⚠️ Especificaciones de Calidad
-              </h4>
-              <ul className="text-[10px] space-y-1 text-amber-700/80 dark:text-amber-300/60 font-semibold list-disc ml-4">
-                <li>Desktop solamente (No afecta a móviles).</li>
-                <li>Vídeos: Máx. 1 minuto, formato MP4.</li>
-                <li>Imágenes: Alta resolución (1920x1080).</li>
-              </ul>
-            </div>
-
-            <form onSubmit={handleSaveBackground} className="space-y-6">
-              <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">1. Seleccionar Tipo</label>
-                <div className="flex gap-3">
-                  {['video', 'image'].map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setBgType(type as 'video' | 'image')}
-                      className={`flex-1 py-3 rounded-xl border-2 font-black text-[10px] uppercase tracking-widest transition-all ${bgType === type
-                        ? 'bg-indigo-500 border-indigo-500 text-white shadow-md'
-                        : theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-500' : 'bg-slate-50 border-slate-200 text-slate-400'
-                        }`}
-                    >
-                      {type === 'video' ? '📽️ Vídeo' : '🖼️ Imagen'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">2. Subir Archivo</label>
-                <div className={`p-6 rounded-2xl border-2 border-dashed text-center transition-all ${theme === 'dark'
-                  ? 'bg-slate-950/40 border-slate-800 hover:border-indigo-500'
-                  : 'bg-slate-50 border-slate-200 hover:border-indigo-500'
-                  }`}>
-                  {uploadingBg ? (
-                    <div className="flex flex-col items-center justify-center gap-2 py-4">
-                      <div className="w-6 h-6 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                      <span className="text-[10px] font-black uppercase text-indigo-500">Subiendo...</span>
-                    </div>
-                  ) : (
-                    <label className="w-full flex flex-col items-center justify-center cursor-pointer py-2">
-                      <svg className="w-10 h-10 text-slate-400 mb-2 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                      </svg>
-                      <span className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">Seleccionar {bgType === 'video' ? 'Vídeo' : 'Imagen'}</span>
-                      <input
-                        type="file"
-                        accept={bgType === 'video' ? 'video/*' : 'image/*'}
-                        onChange={handleBgFileUpload}
-                        className="hidden"
-                      />
-                    </label>
                   )}
+
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="O pega una URL..."
+                      value={newImageInput}
+                      onChange={(e) => setNewImageInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddTourImage()}
+                      className={`flex-1 px-4 py-3 rounded-xl border text-sm focus:outline-none focus:border-rose-500 transition-all ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddTourImage}
+                      className="px-4 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm transition-colors"
+                    >
+                      Añadir
+                    </button>
+                  </div>
+
+                  <label className="flex items-center justify-center gap-2 px-4 py-4 rounded-xl border-2 border-dashed cursor-pointer transition-all hover:border-rose-500">
+                    {uploadingImage ? (
+                      <div className="w-5 h-5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <svg className="w-5 h-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                    <span className="text-sm font-semibold">Subir archivos</span>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFileUpload}
+                      disabled={uploadingImage}
+                    />
+                  </label>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">3. Confirmar Ruta</label>
-                <input
-                  type="text"
-                  placeholder="URL o ruta del archivo"
-                  value={bgUrl}
-                  onChange={(e) => setBgUrl(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border text-xs font-mono focus:outline-none transition-colors ${theme === 'dark' ? 'bg-slate-950 border-slate-800 focus:border-indigo-500' : 'bg-slate-50 border-slate-200 focus:border-indigo-500'
-                    }`}
-                />
-              </div>
-
-              <div className="pt-4 flex gap-3">
+              <div className="flex justify-end gap-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setBgFormOpen(false)}
-                  className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors border ${theme === 'dark'
-                    ? 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
-                    : 'bg-white border-slate-200 text-slate-500 hover:text-slate-950'
-                    }`}
+                  onClick={() => setTourFormOpen(false)}
+                  className={`px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${theme === 'dark' ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-black text-[10px] uppercase tracking-widest py-3 rounded-xl transition-all shadow-md active:scale-95"
+                  className="px-6 py-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs uppercase tracking-widest transition-all shadow-lg shadow-rose-500/25"
                 >
-                  Aplicar Fondo
+                  {editingTourId ? 'Guardar Cambios' : 'Crear Tour'}
                 </button>
               </div>
             </form>
@@ -1434,52 +1465,102 @@ const AdminPanel = ({ theme, onClose }: AdminPanelProps) => {
         </div>
       )}
 
-      {/* MODAL DE UBICACIÓN COMPLETA */}
-      {locationModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
-          <div className={`w-full max-w-md rounded-3xl p-8 shadow-2xl border animate-bounce-in transition-colors ${theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-            }`}>
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-indigo-500/20">
-                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-              <h3 className={`text-xl font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Dirección de Recogida</h3>
-            </div>
-
-            <div className={`p-6 rounded-2xl mb-8 border text-center font-bold leading-relaxed ${theme === 'dark' ? 'bg-slate-950/50 border-slate-800 text-slate-300' : 'bg-slate-50 border-slate-150 text-slate-650'
-              }`}>
-              {selectedLocation}
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedLocation)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-black text-xs uppercase tracking-widest py-4 rounded-xl transition-all shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                </svg>
-                Abrir en Google Maps
-              </a>
-              <button
-                onClick={() => setLocationModalOpen(false)}
-                className={`w-full py-4 rounded-xl font-black text-xs uppercase tracking-widest transition-colors border ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white' : 'bg-white border-slate-200 text-slate-500 hover:text-slate-950'
-                  }`}
-              >
-                Cerrar
+      {/* User Form Modal */}
+      {userFormOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className={`w-full max-w-lg mx-4 p-8 rounded-3xl border shadow-2xl transition-all ${theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className={`text-2xl font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                {editingUserId ? 'Editar Usuario' : 'Crear Usuario'}
+              </h2>
+              <button onClick={() => setUserFormOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
+
+            <form onSubmit={handleSaveUser} className="space-y-6">
+              <div>
+                <label className="text-xs font-bold uppercase tracking-widest text-slate-500 block mb-2">Nombre Completo</label>
+                <input
+                  type="text"
+                  required
+                  value={userNombre}
+                  onChange={(e) => setUserNombre(e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:border-rose-500 transition-all ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase tracking-widest text-slate-500 block mb-2">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={userEmail}
+                  onChange={(e) => setUserEmail(e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:border-rose-500 transition-all ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase tracking-widest text-slate-500 block mb-2">Teléfono</label>
+                <input
+                  type="tel"
+                  value={userTelefono}
+                  onChange={(e) => setUserTelefono(e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:border-rose-500 transition-all ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase tracking-widest text-slate-500 block mb-2">Idioma Preferido</label>
+                <select
+                  value={userIdioma}
+                  onChange={(e) => setUserIdioma(e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:border-rose-500 transition-all ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+                >
+                  <option value="es">Español</option>
+                  <option value="en">English</option>
+                  <option value="pl">Polski</option>
+                  <option value="it">Italiano</option>
+                  <option value="pt">Português</option>
+                  <option value="fr">Français</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase tracking-widest text-slate-500 block mb-2">
+                  {editingUserId ? 'Nueva Contraseña (dejar en blanco para mantener)' : 'Contraseña'}
+                </label>
+                <input
+                  type="password"
+                  value={userContrasena}
+                  onChange={(e) => setUserContrasena(e.target.value)}
+                  placeholder="••••••••"
+                  className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:border-rose-500 transition-all ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setUserFormOpen(false)}
+                  className={`px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${theme === 'dark' ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs uppercase tracking-widest transition-all shadow-lg shadow-rose-500/25"
+                >
+                  {editingUserId ? 'Guardar Cambios' : 'Crear Usuario'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
     </div>
   );
 };
-
 
 export default AdminPanel;
